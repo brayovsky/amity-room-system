@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+"""
+This example uses docopt with the built in cmd module to demonstrate an
+interactive command application.
+Usage:
+    Amity create_room <room_name>
+    Amity add_person <person_name> <FELLOW|STAFF> [wants_accommodation]
+    Amity reallocate_person <person_identifier> <new_room_name>
+    Amity load_people <text_file>
+    Amity print_allocations [-o=filename]
+    Amity print_unallocated [-o=filename]
+    Amity print_room <room_name>
+    Amity save_state [--db=sqlite_database]
+    Amity load_state <sqlite_database>
+    Amity (-i | --interactive)
+    Amity (-h | --help | --version)
+Options:
+    -i, --interactive  Interactive Mode
+    -h, --help  Show this screen and exit.
+"""
+
+import sys
+import cmd
+from docopt import docopt, DocoptExit
+
+
+def docopt_cmd(func):
+    """
+    This decorator is used to simplify the try/except block and pass the result
+    of the docopt parsing to the called action.
+    """
+    def fn(self, arg):
+        try:
+            opt = docopt(fn.__doc__, arg)
+
+        except DocoptExit as e:
+            # The DocoptExit is thrown when the args do not match.
+            # We print a message to the user and the usage block.
+
+            print('Invalid Command!')
+            print(e)
+            return
+
+        except SystemExit:
+            # The SystemExit exception prints the usage for --help
+            # We do not need to do the print here.
+
+            return
+
+        return func(self, opt)
+
+    fn.__name__ = func.__name__
+    fn.__doc__ = func.__doc__
+    fn.__dict__.update(func.__dict__)
+    return fn
+
+
+class AmityInteractive (cmd.Cmd):
+    intro = 'Welcome to my interactive program!'
+    prompt = '(Amity)'
+
+    @docopt_cmd
+    def do_create_room(self, arg):
+        """Usage: create_room <room_name>"""
+        print("This should create a room")
+
+    @docopt_cmd
+    def do_add_person(self, arg):
+        """Usage: add_person <person_name> <FELLOW|STAFF> [wants_accommodation]"""
+        print("This should add a person")
+
+    @docopt_cmd
+    def do_reallocate_person(self, arg):
+        """Usage: reallocate_person <person_identifier> <new_room_name>"""
+        print("This should reallocate a person")
+
+    @docopt_cmd
+    def do_load_people(self, arg):
+        """Usage: load_people <text_file>"""
+        print("This should load people from a text file into Amity")
+
+    @docopt_cmd
+    def do_print_allocations(self, arg):
+        """Usage: print_allocations [-o=filename]"""
+        print("Should print a list of allocated people to the screen or file")
+
+    @docopt_cmd
+    def do_print_unallocated(self, arg):
+        """Usage: print_unallocated [-o=filename]"""
+        print("Should print a list of unallocated people to the screen or file")
+
+    @docopt_cmd
+    def do_print_room(self, arg):
+        """Usage: print_room <room_name>"""
+        print("Should print the names of all people in a room")
+
+    @docopt_cmd
+    def do_save_state(self, arg):
+        """Usage: save_state [--db=sqlite_database]"""
+        print("Should persist all data to a sqlite database")
+
+    @docopt_cmd
+    def do_load_state(self, arg):
+        """Usage: load_state <sqlite_database>"""
+        print("Should load data from a sqllite db provided")
+
+    @docopt_cmd
+    def do_quit(self, arg):
+        """Quits out of Interactive Mode."""
+        print('Good Bye!')
+        exit()
+
+
+if __name__ == '__main__':
+    opt = docopt(__doc__, argv="-i")
+    AmityInteractive().cmdloop()
+
