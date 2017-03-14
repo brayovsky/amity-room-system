@@ -3,7 +3,7 @@
 This example uses docopt with the built in cmd module to demonstrate an
 interactive command application.
 Usage:
-    Amity create_room <room_name>
+    Amity create_room (-o | --office | -l | --livingspace) <room_name>...
     Amity add_person <person_name> <FELLOW|STAFF> [wants_accommodation]
     Amity reallocate_person <person_identifier> <new_room_name>
     Amity load_people <text_file>
@@ -22,6 +22,9 @@ Options:
 import sys
 import cmd
 from docopt import docopt, DocoptExit
+from Person import Person, Fellow, Staff
+from Rooms import Room, LivingSpace, Office
+from Amity import Amity
 
 
 def docopt_cmd(func):
@@ -61,13 +64,19 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_create_room(self, arg):
-        """Usage: create_room <room_name>"""
-        print("This should create a room")
+        """Usage: create_room (-o | --office | -l | --livingspace) <room_name>..."""
+
+        rooms = arg["<room_name>"]
+
+        if arg["-l"] or arg["--livingspace"]:
+            amity.add_room(rooms, "livingspaces")
+        elif arg["-o"] or arg["--office"]:
+            amity.add_room(rooms, "offices")
 
     @docopt_cmd
     def do_add_person(self, arg):
         """Usage: add_person <person_name> <FELLOW|STAFF> [wants_accommodation]"""
-        print("This should add a person")
+        print(arg)
 
     @docopt_cmd
     def do_reallocate_person(self, arg):
@@ -113,5 +122,6 @@ class AmityInteractive (cmd.Cmd):
 
 if __name__ == '__main__':
     opt = docopt(__doc__, argv="-i")
+    amity = Amity()
     AmityInteractive().cmdloop()
 
