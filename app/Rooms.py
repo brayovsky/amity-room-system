@@ -1,5 +1,6 @@
 class Room:
     def __init__(self, amity, room_name):
+        self.number_of_occupants
         pass
 
     def assign_occupant(self, person_name):
