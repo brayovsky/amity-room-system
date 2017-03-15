@@ -46,6 +46,9 @@ class Amity:
 
         # Add new rooms
         self.rooms[room_type] |= set_of_new_rooms
+        # Add new rooms to allocations
+        for room in set_of_new_rooms:
+            self.allocations[room_type][room] = set()
         print("Rooms added succesfully")
         self.total_no_of_rooms = len(self.rooms["offices"]) + len(self.rooms["livingspaces"])
         self.print_allocations()
@@ -135,18 +138,35 @@ class Amity:
         # Use person class method to book an office
         # Iterate through unadded people, instantiate their objects and book them
         # Book offices
+        office_pop_list = set()
+        living_space_pop_list = set()
         for person in self.unbooked_people["offices"]:
             # Determine if person is staff or fellow
             if len(set([person]) & self.people["staff"]) > 0:
                 staff = Staff(person)
-                staff.book_office(self.allocations["offices"], self.rooms["offices"])
+                staff.book_office(self.allocations["offices"],
+                                  self.unbooked_people["offices"])
+                if staff.added:
+                    office_pop_list.add(staff.name)
+
+                if staff.alarm:
+                    break
+
             elif len(set([person]) & self.people["fellows"]) > 0:
                 fellow = Fellow(person)
-                fellow.book_office(self.allocations["offices"], self.rooms["offices"])
+                fellow.book_office(self.allocations["offices"],
+                                   self.unbooked_people["offices"])
+                if fellow.added:
+                    office_pop_list.add(fellow.name)
+
+                if fellow.alarm:
+                    break
+
+        self.unbooked_people["offices"] -= office_pop_list
 
         for person in self.unbooked_people["livingspaces"]:
             fellow = Fellow(person)
-            fellow.book_living_space(self.allocations["livingspaces"], self.rooms["livingspaces"])
+            fellow.book_living_space(self.allocations["livingspaces"], self.unbooked_people["livingspaces"])
 
     def print_allocations(self, filename=None):
         print("--------------------------------------------------")
@@ -158,9 +178,13 @@ class Amity:
         print("--------------------------------------------------")
         print(self.people)
         print("--------------------------------------------------")
-        print("Fellows to be accommodated")
+        print("People to be allocated")
         print("--------------------------------------------------")
         print(self.unbooked_people)
+        print("--------------------------------------------------")
+        print("Allocations are")
+        print("--------------------------------------------------")
+        print(self.allocations)
         print("--------------------------------------------------")
         print("Total number of people is {0}".format(self.total_no_of_people))
         print("--------------------------------------------------")

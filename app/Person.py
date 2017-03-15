@@ -1,16 +1,29 @@
 class Person:
     def __init__(self, person_name):
         self.name = person_name
+        self.added = False
+        self.alarm = False
 
-    def book_office(self, allocations, all_rooms):
+    def book_office(self, allocations, unbooked_people):
         print("Booking office for {}".format(self.name))
+        # Take first office and add, if full, go to next
+        print(allocations)
+        self.added = False
+        for office, people in allocations.items():
+            if len(people) < 6:
+                people.add(self.name)
+                self.added = True
+                return
+
+        self.alarm = True
+        print("You have run out of office space. Some people have not been allocated. \
+              Create rooms using the command 'create_room'")
 
         """
         Books a person into an office
         :param office_name: Office to book into
         :return:
         """
-        pass
 
     def evacuate_room(self):
         """
