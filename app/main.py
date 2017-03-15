@@ -23,8 +23,6 @@ Options:
 import sys
 import cmd
 from docopt import docopt, DocoptExit
-from Person import Person, Fellow, Staff
-from Rooms import Room, LivingSpace, Office
 from Amity import Amity
 
 
@@ -88,7 +86,7 @@ class AmityInteractive (cmd.Cmd):
     @docopt_cmd
     def do_allocate_people(self, arg):
         """Usage: allocate_people"""
-
+        amity.allocate()
 
     @docopt_cmd
     def do_reallocate_person(self, arg):

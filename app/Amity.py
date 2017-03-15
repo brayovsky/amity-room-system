@@ -1,3 +1,6 @@
+from Person import Fellow, Staff
+from Rooms import Office, LivingSpace
+
 class Amity:
     def __init__(self):
         self.total_no_of_rooms = 0
@@ -8,8 +11,10 @@ class Amity:
         self.people = {"fellows": set(),
                        "staff": set()
                        }
-        self.people_to_be_accommodated = set()
-        self.allocated_rooms = {}
+        self.unbooked_people = {"offices": set(),
+                                "livingspaces": set()}
+        self.allocations = {"offices": {},
+                            "livingspaces": {}}
 
     def add_room(self, room_names, room_type):
         """Adds rooms into amity"""
@@ -68,13 +73,11 @@ class Amity:
         if person_type == "staff" and wants_accommodation:
             print("Staff cannot have accommodation")
 
-        if person_type == "staff":
-            self.people[person_type] |= person
-        elif person_type == "fellows":
-            self.people[person_type] |= person
-            # Add to list of accommodations
-            if wants_accommodation:
-                self.people_to_be_accommodated.add(person_name)
+        self.people[person_type] |= person
+        self.unbooked_people["offices"].add(person_name)
+
+        if person_type == "fellows" and wants_accommodation:
+            self.unbooked_people["livingspaces"].add(person_name)
 
         self.total_no_of_people = len(self.people["fellows"]) + len(self.people["staff"])
 
@@ -121,6 +124,29 @@ class Amity:
 
     def allocate(self):
         """Allocates everyone who does not have a room if rooms are available"""
+        if self.total_no_of_rooms == 0:
+            print("There are no rooms to allocate people to. Create rooms using the command 'create_room'")
+            return
+
+        if self.total_no_of_people == 0:
+            print("There are no people to allocate rooms to. Add people using the command 'add_person'")
+            return
+
+        # Use person class method to book an office
+        # Iterate through unadded people, instantiate their objects and book them
+        # Book offices
+        for person in self.unbooked_people["offices"]:
+            # Determine if person is staff or fellow
+            if len(set([person]) & self.people["staff"]) > 0:
+                staff = Staff(person)
+                staff.book_office(self.allocations["offices"], self.rooms["offices"])
+            elif len(set([person]) & self.people["fellows"]) > 0:
+                fellow = Fellow(person)
+                fellow.book_office(self.allocations["offices"], self.rooms["offices"])
+
+        for person in self.unbooked_people["livingspaces"]:
+            fellow = Fellow(person)
+            fellow.book_living_space(self.allocations["livingspaces"], self.rooms["livingspaces"])
 
     def print_allocations(self, filename=None):
         print("--------------------------------------------------")
@@ -134,7 +160,7 @@ class Amity:
         print("--------------------------------------------------")
         print("Fellows to be accommodated")
         print("--------------------------------------------------")
-        print(self.people_to_be_accommodated)
+        print(self.unbooked_people)
         print("--------------------------------------------------")
         print("Total number of people is {0}".format(self.total_no_of_people))
         print("--------------------------------------------------")
