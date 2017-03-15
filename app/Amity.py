@@ -14,6 +14,9 @@ class Amity:
     def add_room(self, room_names, room_type):
         """Adds rooms into amity"""
 
+        # Capitalize all room names
+        room_names = [room_name.capitalize() for room_name in room_names]
+
         set_of_new_rooms = set(room_names)
 
         # Ensure there are no duplicates
@@ -45,13 +48,25 @@ class Amity:
     def add_person(self, person_name, person_type, wants_accommodation=False):
         """Adds a person into amity"""
 
-        # Check for duplicates
+        person_name = person_name.capitalize()
+        person = {person_name, }
+
+        # Check for duplicates in other peron types
+        if person_type == "fellows":
+            opposite_person_type = "staff"
+        elif person_type == "staff":
+            opposite_person_type = "fellows"
+
+        new_set = self.people[opposite_person_type] | person
+        expected_length = len(self.people[opposite_person_type]) + 1
+
+        if len(new_set) < expected_length:
+            print("{} Already exists. He/She cannot be re-added.".format(person_name))
+            return
 
         # Staff should not have accommodation
         if person_type == "staff" and wants_accommodation:
             print("Staff cannot have accommodation")
-
-        person = {person_name, }
 
         if person_type == "staff":
             self.people[person_type] |= person
@@ -66,7 +81,7 @@ class Amity:
         self.print_allocations()
 
     def load_people(self, filename):
-        pass
+        """Loads people from a text file into amity"""
 
     def print_allocations(self, filename=None):
         print("--------------------------------------------------")
