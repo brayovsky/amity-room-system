@@ -81,6 +81,8 @@ class AmityInteractive (cmd.Cmd):
 
         if arg["-s"] or arg["--staff"]:
             amity.add_person(person_name, "staff", wants_accommodation)
+        elif arg["-f"] or arg["--fellow"]:
+            amity.add_person(person_name, "fellows", wants_accommodation)
 
     @docopt_cmd
     def do_reallocate_person(self, arg):
