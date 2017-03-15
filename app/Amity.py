@@ -80,8 +80,44 @@ class Amity:
 
         self.print_allocations()
 
-    def load_people(self, filename):
-        """Loads people from a text file into amity"""
+    def load_people(self, person):
+        """Loads people from a text file into amity.
+           A sample line of the file is:
+           FIRSTNAME LASTNAME FELLOW|STAFF Y
+        """
+        person = person.split()
+
+        # Combine first and last names
+        try:
+            person[0] += " " + person.pop(1)
+        except IndexError:
+            print("Please use a valid file format.")
+            return
+
+        if len(person) < 2 or len(person) > 3:
+            print("Wrong format encountered. Please check the line at '{}'. \
+                   Use the format FIRSTNAME LASTNAME FELLOW|STAFF Y".format(person[0]))
+            return
+
+        if person[1] != "STAFF" and person[1] != "FELLOW":
+            # wrong format
+            print("Wrong format encountered. Please check the line at '{}. \
+                  The third word should be STAFF or FELLOW".format(person[0]))
+            return
+
+        if len(person) == 3 and person[2] != "Y":
+            print("Wrong format encountered. Please check the line at '{}'. \
+            The fourth word should be Y or none at all".format(person[0]))
+            return
+
+        wants_accommodation = False
+        if len(person) == 3:
+            wants_accommodation = True
+
+        if person[1] == "STAFF":
+            self.add_person(person[0], "staff", wants_accommodation)
+        elif person[1] == "FELLOW":
+            self.add_person(person[0], "fellows", wants_accommodation)
 
     def print_allocations(self, filename=None):
         print("--------------------------------------------------")
