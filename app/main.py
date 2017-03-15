@@ -121,7 +121,7 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_quit(self, arg):
-        """Quits out of Interactive Mode."""
+        """Usage: (quit)"""
         print('Good Bye!')
         exit()
 
