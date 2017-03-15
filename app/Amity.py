@@ -119,6 +119,9 @@ class Amity:
         elif person[1] == "FELLOW":
             self.add_person(person[0], "fellows", wants_accommodation)
 
+    def allocate(self):
+        """Allocates everyone who does not have a room if rooms are available"""
+
     def print_allocations(self, filename=None):
         print("--------------------------------------------------")
         print("All rooms in amity")
