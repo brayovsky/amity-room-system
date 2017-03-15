@@ -4,7 +4,7 @@ This example uses docopt with the built in cmd module to demonstrate an
 interactive command application.
 Usage:
     Amity create_room (-o | --office | -l | --livingspace) <room_name>...
-    Amity add_person <person_name> <FELLOW|STAFF> [wants_accommodation]
+    Amity add_person <person_name> (-f | --fellow | -s | --staff) [wants_accommodation]
     Amity reallocate_person <person_identifier> <new_room_name>
     Amity load_people <text_file>
     Amity print_allocations [-o=filename]
@@ -75,8 +75,12 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_add_person(self, arg):
-        """Usage: add_person <person_name> <FELLOW|STAFF> [wants_accommodation]"""
-        print(arg)
+        """Usage: add_person <person_name> (-f | --fellow | -s | --staff) [wants_accommodation]"""
+        person_name = arg["<person_name>"]
+        wants_accommodation = arg["wants_accommodation"]
+
+        if arg["-s"] or arg["--staff"]:
+            amity.add_person(person_name, "staff", wants_accommodation)
 
     @docopt_cmd
     def do_reallocate_person(self, arg):
