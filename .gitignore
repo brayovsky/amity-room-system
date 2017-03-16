@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 example.py
 example.txt
+userdata/

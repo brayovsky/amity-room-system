@@ -110,8 +110,11 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_print_allocations(self, arg):
-        """Usage: print_allocations [-o=filename]"""
-        print("Should print a list of allocated people to the screen or file")
+        """Usage: print_allocations [-o] [<filename>]"""
+        if arg["-o"] and arg["<filename>"]:
+            amity.print_allocations(arg["<filename>"])
+            return
+        amity.print_allocations()
 
     @docopt_cmd
     def do_print_unallocated(self, arg):
