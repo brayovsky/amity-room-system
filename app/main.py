@@ -24,6 +24,7 @@ import sys
 import cmd
 from docopt import docopt, DocoptExit
 from Amity import Amity
+from Person import Person
 
 
 def docopt_cmd(func):
@@ -46,7 +47,6 @@ def docopt_cmd(func):
         except SystemExit:
             # The SystemExit exception prints the usage for --help
             # We do not need to do the print here.
-
             return
 
         return func(self, opt)
@@ -91,7 +91,8 @@ class AmityInteractive (cmd.Cmd):
     @docopt_cmd
     def do_reallocate_person(self, arg):
         """Usage: reallocate_person <person_identifier> <new_room_name>"""
-        print("This should reallocate a person")
+        person = Person(arg["<person_identifier>"])
+        person.change_room(arg["<new_room_name>"], amity)
 
     @docopt_cmd
     def do_load_people(self, arg):
