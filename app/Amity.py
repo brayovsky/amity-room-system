@@ -1,5 +1,5 @@
 from Person import Fellow, Staff
-from Rooms import Office, LivingSpace
+
 
 class Amity:
     def __init__(self):
@@ -12,45 +12,33 @@ class Amity:
                        "staff": set()
                        }
         self.unbooked_people = {"offices": set(),
-                                "livingspaces": set()}
+                                "livingspaces": set()
+                                }
         self.allocations = {"offices": {},
-                            "livingspaces": {}}
+                            "livingspaces": {}
+                            }
 
     def add_room(self, room_names, room_type):
         """Adds rooms into amity"""
 
         # Capitalize all room names
         room_names = [room_name.capitalize() for room_name in room_names]
-
-        print("room names are")
-        print(room_names)
-
         set_of_new_rooms = set(room_names)
 
-        # Ensure there are no duplicates
-        if room_type == "offices":
-            opposite_room = "livingspaces"
-        else:
-            opposite_room = "offices"
+        new_set_length = len(set_of_new_rooms | self.rooms["offices"] | self.rooms["livingspaces"])
+        expected_length = len(self.rooms["offices"]) + len(self.rooms["livingspaces"]) + len(set_of_new_rooms)
 
-        new_set = set_of_new_rooms | self.rooms[opposite_room]
-        expected_length = len(self.rooms[opposite_room]) + len(set_of_new_rooms)
-
-        if len(new_set) < expected_length:
+        if new_set_length < expected_length:
             # Duplicate exists
-            print("There are rooms that already exist. Duplicate rooms will be removed")
+            print("There are rooms that already exist. Duplicate rooms will be removed. The duplicates are:")
 
             # Get duplicates and remove them from set_of_new_rooms
             all_rooms = self.rooms["livingspaces"] | self.rooms["offices"]
             duplicate_rooms = set_of_new_rooms & all_rooms
 
-            print("Duplicate rooms are")
-            print(duplicate_rooms)
             for duplicate_room in duplicate_rooms:
+                print(duplicate_room)
                 set_of_new_rooms.discard(duplicate_room)
-
-            print("Set to be added")
-            print(set_of_new_rooms)
 
         # Add new rooms
         self.rooms[room_type] |= set_of_new_rooms
