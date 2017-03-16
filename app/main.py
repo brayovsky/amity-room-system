@@ -8,8 +8,8 @@ Usage:
     amity allocate_people
     Amity reallocate_person <person_identifier> <new_room_name>
     Amity load_people <text_file>
-    Amity print_allocations [-o=filename]
-    Amity print_unallocated [-o=filename]
+    Amity print_allocations [-o] [<filename>]
+    Amity print_unallocated [-o] [<filename>]
     Amity print_room <room_name>
     Amity save_state [--db=sqlite_database]
     Amity load_state <sqlite_database>
@@ -118,8 +118,11 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_print_unallocated(self, arg):
-        """Usage: print_unallocated [-o=filename]"""
-        print("Should print a list of unallocated people to the screen or file")
+        """Usage: print_unallocated [-o] [<filename>]"""
+        if arg["-o"] and arg["<filename>"]:
+            amity.print_unallocated(arg["<filename>"])
+            return
+        amity.print_unallocated()
 
     @docopt_cmd
     def do_print_room(self, arg):
