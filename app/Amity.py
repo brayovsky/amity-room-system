@@ -171,24 +171,31 @@ class Amity:
 
     def print_allocations(self, filename=None):
         """Shows all room allocations"""
-        print("Offices")
-        office_allocations = ""
-        livingspace_allocations = ""
+        allocations = "Offices"
         for office, people in self.allocations["offices"].items():
-            office_allocations += office + "\n" + "-"*100 + "\n" + ", ".join(people) + "\n"*2
-        print(office_allocations)
+            allocations += office + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
 
-        print("Living spaces")
+        allocations += "\r\nLiving Spaces\r\n"
         for livingspace, people in self.allocations["livingspaces"].items():
-            livingspace_allocations += office + "\n" + "-"*100 + "\n" + ", ".join(people) + "\n"*2
-        print(livingspace_allocations)
+            allocations += office + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
+        print(allocations)
 
-        all_allocations = office_allocations + livingspace_allocations
         if filename:
-            self.save_to_file(filename, all_allocations)
+            self.save_to_file(filename, allocations)
 
     def print_unallocated(self, filename=None):
-        pass
+        """Shows all unallocated people"""
+        unallocations = "Offices\r\n"
+        for people in self.unbooked_people["offices"]:
+            unallocations += people + "\r\n"
+
+        unallocations += "\r\nLiving Spaces\r\n"
+        for people in self.unbooked_people["livingspaces"]:
+            unallocations += people + "\r\n"
+        print(unallocations)
+
+        if filename:
+            self.save_to_file(filename, unallocations)
 
     def save_amity(self, db_name):
         pass
