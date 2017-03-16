@@ -96,7 +96,12 @@ class AmityInteractive (cmd.Cmd):
     @docopt_cmd
     def do_load_people(self, arg):
         """Usage: load_people <text_file>"""
-        people_file = open(arg["<text_file>"])
+        try:
+            people_file = open(arg["<text_file>"])
+        except FileNotFoundError:
+            print("File '{}' not found".format(arg["<text_file>"]))
+            return
+
         for line in people_file:
             # Call method for processing file into proper output and use existing functions DRY!!
             amity.load_people(line)
