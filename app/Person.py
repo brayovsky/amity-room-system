@@ -21,9 +21,7 @@ class Person:
               Create rooms using the command 'create_room'")
 
     def change_room(self, new_room, amity):
-        # conditions
-        # person must be valid
-        # check if he exists in people
+        # check if person is valid
         new_room = new_room.capitalize()
         all_people = amity.people["fellows"] | amity.people["staff"]
         person = {self.name.capitalize(), }
@@ -50,21 +48,15 @@ class Person:
             print("Staff cannot be allocated to living spaces")
             return
         # room must have at least one vacant position
-        # get room in allocations and if vacant position add, remove person from previous allocations
         if len(amity.allocations[room_type][new_room]) == room_properties.max_no_of_occupants:
             print("{0} cannot be moved to {1} because it is filled to its maximum capacity."
                   .format(self.name.capitalize(), new_room))
             return
 
-        # allocate person the room
-        # check if person in unbooked
+        # change allocations if all is well
         try:
-            print("Removing from unbooked")
             amity.unbooked_people[room_type].remove(self.name.capitalize())
         except KeyError:
-            # remove from allocations
-            print("Changing from allocations")
-            # need to know previous room
             for amity_room, people in amity.allocations[room_type].items():
                 if len(person & people) > 0:
                     people.remove(self.name.capitalize())
