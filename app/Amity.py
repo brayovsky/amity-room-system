@@ -1,4 +1,5 @@
 from Person import Fellow, Staff
+import os
 
 
 class Amity:
@@ -47,7 +48,7 @@ class Amity:
             self.allocations[room_type][room] = set()
         print("Rooms added succesfully")
         self.total_no_of_rooms = len(self.rooms["offices"]) + len(self.rooms["livingspaces"])
-        self.print_allocations()
+        self.show_state()
 
     def add_person(self, person_name, person_type, wants_accommodation=False):
         """Adds a person into amity"""
@@ -80,7 +81,7 @@ class Amity:
 
         self.total_no_of_people = len(self.people["fellows"]) + len(self.people["staff"])
 
-        self.print_allocations()
+        self.show_state()
 
     def load_people(self, person):
         """Loads people from a text file into amity.
@@ -169,6 +170,52 @@ class Amity:
         print(self.allocations)
 
     def print_allocations(self, filename=None):
+        """Shows all room allocations"""
+        print("Offices")
+        office_allocations = ""
+        livingspace_allocations = ""
+        for office, people in self.allocations["offices"].items():
+            office_allocations += office + "\n" + "-"*100 + "\n" + ", ".join(people) + "\n"*2
+        print(office_allocations)
+
+        print("Living spaces")
+        for livingspace, people in self.allocations["livingspaces"].items():
+            livingspace_allocations += office + "\n" + "-"*100 + "\n" + ", ".join(people) + "\n"*2
+        print(livingspace_allocations)
+
+        all_allocations = office_allocations + livingspace_allocations
+        if filename:
+            self.save_to_file(filename, all_allocations)
+
+    def print_unallocated(self, filename=None):
+        pass
+
+    def save_amity(self, db_name):
+        pass
+
+    def load_amity(self, db_name):
+        pass
+
+    @staticmethod
+    def save_to_file(filename, data):
+        filename += ".txt"
+        save_path = os.path.dirname(os.path.realpath(__file__)) + "/userdata/"
+        complete_name = os.path.join(save_path, filename)
+
+        if os.path.isfile(complete_name):
+            print("Please use a file that does not exist in the directory to avoid overwriting your files")
+            return
+        try:
+            allocations_file = open(complete_name, "w+")
+        except FileNotFoundError:
+            print("Please use a filename as opposed to a directory name")
+            return
+
+        allocations_file.write(data)
+        allocations_file.close()
+        print("Data saved to {}".format(complete_name))
+
+    def show_state(self):
         print("--------------------------------------------------")
         print("All rooms in amity")
         print("--------------------------------------------------")
@@ -190,12 +237,3 @@ class Amity:
         print("--------------------------------------------------")
         print("Total number of rooms is {0}".format(self.total_no_of_rooms))
         print("--------------------------------------------------")
-
-    def print_unallocated(self, filename=None):
-        pass
-
-    def save_amity(self, db_name):
-        pass
-
-    def load_amity(self, db_name):
-        pass
