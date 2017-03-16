@@ -1,16 +1,17 @@
+from Rooms import Office, LivingSpace
+
+
 class Person:
     def __init__(self, person_name):
         self.name = person_name
         self.added = False
         self.alarm = False
 
-    def book_office(self, allocations, unbooked_people):
-        print("Booking office for {}".format(self.name))
-        # Take first office and add, if full, go to next
-        print(allocations)
+    def book_office(self, allocations):
         self.added = False
-        for office, people in allocations.items():
-            if len(people) < 6:
+        office = Office()
+        for office_name, people in allocations.items():
+            if len(people) < office.max_no_of_occupants:
                 people.add(self.name)
                 self.added = True
                 return
@@ -52,11 +53,16 @@ class Staff(Person):
 class Fellow(Person):
     def __init__(self, person_name):
         super(Fellow, self).__init__(person_name)
-        pass
 
-    def book_living_space(self, allocations, livingspaces):
-        """
-        Books a fellow into a living space
-        :return: True or False
-        """
-        print("Booking living space for {}".format(self.name))
+    def book_living_space(self, allocations):
+        self.added = False
+        livingspace = LivingSpace()
+        for livingspace_name, people in allocations.items():
+            if len(people) < livingspace.max_no_of_occupants:
+                people.add(self.name)
+                self.added = True
+                return
+
+        self.alarm = True
+        print("You have run out of living space. Some people have not been allocated. \
+                      Create rooms using the command 'create_room'")

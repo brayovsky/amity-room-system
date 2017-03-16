@@ -22,6 +22,9 @@ class Amity:
         # Capitalize all room names
         room_names = [room_name.capitalize() for room_name in room_names]
 
+        print("room names are")
+        print(room_names)
+
         set_of_new_rooms = set(room_names)
 
         # Ensure there are no duplicates
@@ -41,8 +44,13 @@ class Amity:
             all_rooms = self.rooms["livingspaces"] | self.rooms["offices"]
             duplicate_rooms = set_of_new_rooms & all_rooms
 
+            print("Duplicate rooms are")
+            print(duplicate_rooms)
             for duplicate_room in duplicate_rooms:
                 set_of_new_rooms.discard(duplicate_room)
+
+            print("Set to be added")
+            print(set_of_new_rooms)
 
         # Add new rooms
         self.rooms[room_type] |= set_of_new_rooms
@@ -135,17 +143,13 @@ class Amity:
             print("There are no people to allocate rooms to. Add people using the command 'add_person'")
             return
 
-        # Use person class method to book an office
-        # Iterate through unadded people, instantiate their objects and book them
-        # Book offices
         office_pop_list = set()
         living_space_pop_list = set()
         for person in self.unbooked_people["offices"]:
             # Determine if person is staff or fellow
             if len(set([person]) & self.people["staff"]) > 0:
                 staff = Staff(person)
-                staff.book_office(self.allocations["offices"],
-                                  self.unbooked_people["offices"])
+                staff.book_office(self.allocations["offices"])
                 if staff.added:
                     office_pop_list.add(staff.name)
 
@@ -154,8 +158,7 @@ class Amity:
 
             elif len(set([person]) & self.people["fellows"]) > 0:
                 fellow = Fellow(person)
-                fellow.book_office(self.allocations["offices"],
-                                   self.unbooked_people["offices"])
+                fellow.book_office(self.allocations["offices"])
                 if fellow.added:
                     office_pop_list.add(fellow.name)
 
@@ -166,7 +169,16 @@ class Amity:
 
         for person in self.unbooked_people["livingspaces"]:
             fellow = Fellow(person)
-            fellow.book_living_space(self.allocations["livingspaces"], self.unbooked_people["livingspaces"])
+            fellow.book_living_space(self.allocations["livingspaces"])
+            if fellow.added:
+                living_space_pop_list.add(fellow.name)
+
+            if fellow.alarm:
+                break
+
+        self.unbooked_people["livingspaces"] -= living_space_pop_list
+
+        print(self.allocations)
 
     def print_allocations(self, filename=None):
         print("--------------------------------------------------")
