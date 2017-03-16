@@ -171,13 +171,13 @@ class Amity:
 
     def print_allocations(self, filename=None):
         """Shows all room allocations"""
-        allocations = "Offices"
+        allocations = "Offices\r\n"
         for office, people in self.allocations["offices"].items():
             allocations += office + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
 
         allocations += "\r\nLiving Spaces\r\n"
         for livingspace, people in self.allocations["livingspaces"].items():
-            allocations += office + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
+            allocations += livingspace + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
         print(allocations)
 
         if filename:
