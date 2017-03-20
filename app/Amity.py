@@ -1,5 +1,7 @@
 from Person import Fellow, Staff
 import os
+from Model import Address, Person, Base
+from sqlalchemy import create_engine
 
 
 class Amity:
@@ -215,8 +217,14 @@ class Amity:
                                       )
               )
 
-    def save_amity(self, db_name):
-        pass
+    def save_amity(self, db_name=None):
+        # Create an engine that stores data in the local directory's
+        # sqlalchemy_example.db file.
+        engine = create_engine('sqlite:///example.db')
+
+        # Create all tables in the engine. This is equivalent to "Create Table"
+        # statements in raw SQL.
+        Base.metadata.create_all(engine)
 
     def load_amity(self, db_name):
         pass
