@@ -20,7 +20,6 @@ Options:
     -h, --help  Show this screen and exit.
 """
 
-import sys
 import cmd
 from docopt import docopt, DocoptExit
 from Amity import Amity
@@ -58,7 +57,7 @@ def docopt_cmd(func):
 
 
 class AmityInteractive (cmd.Cmd):
-    intro = 'Welcome to my interactive program!'
+    intro = 'Welcome to Amity!'
     prompt = '(Amity)'
 
     @docopt_cmd
