@@ -211,7 +211,9 @@ class Amity:
 
         print("\n{}\n{}\n{}\n".format(room_name,
                                       "_"*100,
-                                      ", ".join(self.allocations[room_type][room_name])))
+                                      ", ".join(self.allocations[room_type][room_name])
+                                      )
+              )
 
     def save_amity(self, db_name):
         pass
