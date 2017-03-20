@@ -1,7 +1,5 @@
 .idea/*
 __pycache__/
 *.pyc
-example.py
-example.txt
 userdata/
 *.db
