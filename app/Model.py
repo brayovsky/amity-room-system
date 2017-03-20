@@ -7,19 +7,20 @@ Base = declarative_base()
 
 class Rooms(Base):
     __tablename__ = 'rooms'
-    # Here we define columns for the table address.
-    # Notice that each column is also a normal Python instance attribute.
     room_name = Column(String(250), primary_key=True)
-    room_type = Column(String(1), nullable=False)
+    room_type = Column(String(250), nullable=False)
 
 
 class People(Base):
     __tablename__ = 'people'
-    # Here we define columns for the table person
-    # Notice that each column is also a normal Python instance attribute.
-    # id = Column(Integer, primary_key=True)
     person_name = Column(String(250), primary_key=True)
-    person_type = Column(String(1), nullable=False)
-    office = Column(String(250), ForeignKey('rooms.room_name'), nullable=True)
-    living_space = Column(String(250), ForeignKey('rooms.room_name'), nullable=True)
+    person_type = Column(String(250), nullable=False)
+
+
+class Allocations(Base):
+    __tablename__ = 'allocations'
+    id = Column(Integer, primary_key=True)
+    person_name = Column(String(250), ForeignKey('people.person_name'))
+    room_name = Column(String(250), ForeignKey('rooms.room_name'))
     room = relationship(Rooms)
+    person = relationship(People)

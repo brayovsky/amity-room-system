@@ -1,7 +1,9 @@
 from Person import Fellow, Staff
 import os
-from Model import People, Rooms, Base
-from sqlalchemy import create_engine
+from Model import People, Rooms, Allocations, Base
+import sqlalchemy
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.orm import sessionmaker, Session
 
 
 class Amity:
@@ -218,21 +220,53 @@ class Amity:
               )
 
     def save_amity(self, db_name=None):
-        # create database
-        self.create_database(db_name)
-        # save data into database
+        if db_name:
+            db_name += ".db"
+        else:
+            db_name = "amity.db"
+        # check if database exists
+        if self.check_db_exists(db_name):
+            self.reset_db(db_name)
+            self.create_database(db_name)
+        else:
+            self.create_database(db_name)
+        self.save_current_data(db_name)
+
+    def save_current_data(self, db_name):
+        engine = create_engine('sqlite:///' + db_name)
+        Base.metadata.bind = engine
+
+        db_session = sessionmaker(bind=engine)
+        session = db_session()
+        try:
+            amity = []
+            for fellow in self.people["fellows"]:
+                amity.append(People(person_name=fellow, person_type="fellows"))
+            for staff in self.people["staff"]:
+                amity.append(People(person_name=staff, person_type="staff"))
+            for office in self.rooms["offices"]:
+                amity.append(Rooms(room_name=office, room_type="offices"))
+            for livingspace in self.rooms["livingspaces"]:
+                amity.append(Rooms(room_name=livingspace, room_type="livingspaces"))
+
+            session.bulk_save_objects(amity)
+            session.commit()
+            print("Data saved to {}".format(db_name))
+        except sqlalchemy.exc.IntegrityError:
+            print("New data added to database")
 
     def load_amity(self, db_name):
         pass
 
     @staticmethod
     def create_database(db_name):
-        if db_name:
-            db_name += ".db"
-        else:
-            db_name = "amity.db"
         engine = create_engine('sqlite:///'+db_name)
         Base.metadata.create_all(engine)
+
+    @staticmethod
+    def reset_db(db_name):
+        engine = create_engine('sqlite:///' + db_name)
+        Base.metadata.drop_all(engine)
 
     @staticmethod
     def save_to_file(filename, data):
@@ -252,6 +286,16 @@ class Amity:
         allocations_file.write(data)
         allocations_file.close()
         print("Data saved to {}".format(complete_name))
+
+    @staticmethod
+    def check_db_exists(db_name):
+        path = os.path.dirname(os.path.realpath(__file__)) + "/../"
+        complete_name = os.path.join(path, db_name)
+
+        if os.path.isfile(complete_name):
+            return True
+        else:
+            return False
 
     def show_state(self):
         print("--------------------------------------------------")
