@@ -133,6 +133,8 @@ class AmityInteractive (cmd.Cmd):
     def do_save_state(self, arg):
         """Usage: save_state [--db=sqlite_database]"""
         print("Should persist all data to a sqlite database")
+        print(arg)
+        amity.save_amity()
 
     @docopt_cmd
     def do_load_state(self, arg):

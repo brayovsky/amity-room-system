@@ -4,3 +4,4 @@ __pycache__/
 example.py
 example.txt
 userdata/
+*.db
