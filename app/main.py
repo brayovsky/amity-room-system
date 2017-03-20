@@ -127,7 +127,7 @@ class AmityInteractive (cmd.Cmd):
     @docopt_cmd
     def do_print_room(self, arg):
         """Usage: print_room <room_name>"""
-        print("Should print the names of all people in a room")
+        amity.print_room(arg["<room_name>"])
 
     @docopt_cmd
     def do_save_state(self, arg):

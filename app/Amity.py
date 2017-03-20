@@ -197,6 +197,22 @@ class Amity:
         if filename:
             self.save_to_file(filename, unallocations)
 
+    def print_room(self, room_name):
+        # ascertain whether room is in amity and is office or livingspace
+        room_name = room_name.capitalize()
+        room_set = {room_name, }
+        if len(self.rooms["offices"] & room_set) > 0:
+            room_type = "offices"
+        elif len(self.rooms["livingspaces"] & room_set) > 0:
+            room_type = "livingspaces"
+        else:
+            print("{} does not exist in Amity. Create a room using the command 'create_room'".format(room_name))
+            return
+
+        print("\n{}\n{}\n{}\n".format(room_name,
+                                      "_"*100,
+                                      ", ".join(self.allocations[room_type][room_name])))
+
     def save_amity(self, db_name):
         pass
 
