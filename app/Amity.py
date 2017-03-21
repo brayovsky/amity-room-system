@@ -248,6 +248,12 @@ class Amity:
                 amity.append(Rooms(room_name=office, room_type="offices"))
             for livingspace in self.rooms["livingspaces"]:
                 amity.append(Rooms(room_name=livingspace, room_type="livingspaces"))
+            for office, people in self.allocations["offices"].items():
+                for person in people:
+                    amity.append(Allocations(room_name=office,
+                                             person_name=person
+                                             )
+                                 )
 
             session.bulk_save_objects(amity)
             session.commit()
@@ -256,11 +262,17 @@ class Amity:
             print("New data added to database")
 
     def load_amity(self, db_name):
-        pass
+        # Check if database exists
+        db_name += ".db"
+        if not self.check_db_exists(db_name):
+            print("{} database does not exist.".format(db_name))
+            return
+
+
 
     @staticmethod
     def create_database(db_name):
-        engine = create_engine('sqlite:///'+db_name)
+        engine = create_engine('sqlite:///' + db_name)
         Base.metadata.create_all(engine)
 
     @staticmethod
