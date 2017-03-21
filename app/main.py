@@ -139,7 +139,9 @@ class AmityInteractive (cmd.Cmd):
     @docopt_cmd
     def do_load_state(self, arg):
         """Usage: load_state <sqlite_database>"""
-        print("Should load data from a sqllite db provided")
+        if amity.total_no_of_people or amity.total_no_of_rooms:
+            print("Loading data without saving any added data will clear that data!")
+        amity.load_amity(arg["<sqlite_database>"])
 
     @docopt_cmd
     def do_help(self, arg):
