@@ -267,8 +267,7 @@ class Amity:
         if not self.check_db_exists(db_name):
             print("{} database does not exist.".format(db_name))
             return
-        # Load data
-        # Check if database model is right, try
+
         try:
             session = self.connect_to_db(db_name)
             if session:

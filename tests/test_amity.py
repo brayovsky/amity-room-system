@@ -9,9 +9,51 @@ import os
 
 class TestAmity(TestCase):
     def setUp(self):
-        amity = Amity()
+        self.amity = Amity()
 
     def tearDown(self):
+        pass
+
+    def test_total_number_of_people_increases(self):
+        pass
+
+    def test_total_number_of_rooms_increases(self):
+        pass
+
+    def test_does_not_load_invalid_file(self):
+        pass
+
+    def test_does_not_load_inexisting_file(self):
+        pass
+
+    def test_loads_file(self):
+        pass
+
+    def test_staff_cannot_want_accommodation(self):
+        pass
+
+    def test_does_not_add_person_twice(self):
+        pass
+
+    def test_does_not_add_person_twice(self):
+        pass
+
+    def test_prints_allocation_to_file(self):
+        pass
+
+    def test_does_not_overwrite_existing_file(self):
+        pass
+
+    def test_creates_database(self):
+        pass
+
+    def test_resets_database(self):
+        pass
+
+    def test_checks_for_existing_database(self):
+        pass
+
+    def test_does_not_show_state_with_debug_off(self):
         pass
     # Person
     # Test does not add the same person
@@ -21,20 +63,6 @@ class TestAmity(TestCase):
     # Test changing office
     # Test staff cannot book living space
 
-    # Amity
-    # Test total number of people
-    # Test total number of rooms
-    # Test loads people from file
-    # Test does not load invalid format
-    # Test does not load inexisting file
-    # Test staff cannot want accommodation
-    # Test does not add the same room
-    # Test prints allocation to file
-    # Test does not overwrite existing file
-    # Test creates database
-    # Test resets database
-    # Test checks for existing dbfile
-    # Test does not show state with debug off
 
     # Room
     # Test adding more than 6 people to a room
@@ -55,4 +83,5 @@ class TestPerson(TestCase):
 
     def tearDown(self):
         pass
+
 
