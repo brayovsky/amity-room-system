@@ -142,6 +142,11 @@ class AmityInteractive (cmd.Cmd):
         print("Should load data from a sqllite db provided")
 
     @docopt_cmd
+    def do_help(self, arg):
+        """Usage: help"""
+        print(__doc__)
+
+    @docopt_cmd
     def do_quit(self, arg):
         """Usage: (quit)"""
         print('Good Bye!')
