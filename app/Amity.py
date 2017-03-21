@@ -267,8 +267,54 @@ class Amity:
         if not self.check_db_exists(db_name):
             print("{} database does not exist.".format(db_name))
             return
+        # Load data
+        # Check if database model is right, try
+        try:
+            session = self.connect_to_db(db_name)
+            if session:
+                # Clear data
+                self.clear_amity_data()
+                all_people = session.query(People)
+                all_rooms = session.query(Rooms)
+                allocations = session.query(Allocations)
+                for person in all_people:
+                    self.people[person.person_type].add(person.person_name)
+                for room in all_rooms:
+                    self.rooms[room.room_type].add(room.room_name)
+                for allocation in allocations:
+                    room_type = session.query(Rooms.room_type).filter_by(room_name=allocation.room_name).scalar()
+                    try:
+                        self.allocations[room_type][allocation.room_name].add(allocation.person_name)
+                    except KeyError:
+                        self.allocations[room_type][allocation.room_name] = {allocation.person_name, }
 
+                # Can currently only pick unbooked people waiting for offices
+                people_names = self.people["fellows"] | self.people["staff"]
+                allocated_people = session.query(Allocations.person_name).distinct()
+                allocated_names = set(
+                                    [allocated_person[0] for allocated_person in allocated_people]
+                                    )
+                unbooked_people = people_names - allocated_names
+                self.unbooked_people["offices"] = unbooked_people
 
+        except sqlalchemy.exc.OperationalError:
+            print("Incompatible database format. Please use a database created by amity system")
+
+    def clear_amity_data(self):
+        self.total_no_of_rooms = 0
+        self.total_no_of_people = 0
+        self.rooms = {"offices": set(),
+                      "livingspaces": set()
+                      }
+        self.people = {"fellows": set(),
+                       "staff": set()
+                       }
+        self.unbooked_people = {"offices": set(),
+                                "livingspaces": set()
+                                }
+        self.allocations = {"offices": {},
+                            "livingspaces": {}
+                            }
 
     @staticmethod
     def create_database(db_name):
@@ -279,6 +325,13 @@ class Amity:
     def reset_db(db_name):
         engine = create_engine('sqlite:///' + db_name)
         Base.metadata.drop_all(engine)
+
+    @staticmethod
+    def connect_to_db(db_name):
+        engine = create_engine('sqlite:///' + db_name)
+        db_session = sessionmaker(bind=engine)
+        session = db_session()
+        return session
 
     @staticmethod
     def save_to_file(filename, data):
