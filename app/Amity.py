@@ -234,6 +234,10 @@ class Amity:
 
     def save_current_data(self, db_name):
         session = self.connect_to_db(db_name)
+
+        if not session:
+            return
+
         try:
             amity = []
             for fellow in self.people["fellows"]:
@@ -286,14 +290,15 @@ class Amity:
                     except KeyError:
                         self.allocations[room_type][allocation.room_name] = {allocation.person_name, }
 
-                # Can currently only pick unbooked people waiting for offices
                 people_names = self.people["fellows"] | self.people["staff"]
                 allocated_people = session.query(Allocations.person_name).distinct()
-                allocated_names = set(
-                                    [allocated_person[0] for allocated_person in allocated_people]
-                                    )
+                allocated_names = set([allocated_person[0] for allocated_person in allocated_people])
                 unbooked_people = people_names - allocated_names
                 self.unbooked_people["offices"] = unbooked_people
+
+                unaccommodated_fellows = session.query(People.person_name).filter_by(wants_accommodation=True)
+                unaccommodated_fellow_names = set([fellow[0] for fellow in unaccommodated_fellows])
+                self.unbooked_people["livingspaces"] = unaccommodated_fellow_names
 
         except sqlalchemy.exc.OperationalError:
             print("Incompatible database format. Please use a database created by amity system")
