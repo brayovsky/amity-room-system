@@ -52,7 +52,7 @@ class Amity:
             self.allocations[room_type][room] = set()
         print("Rooms added succesfully")
         self.total_no_of_rooms = len(self.rooms["offices"]) + len(self.rooms["livingspaces"])
-        self.show_state()
+        # self.show_state()
 
     def add_person(self, person_name, person_type, wants_accommodation=False):
         """Adds a person into amity"""
@@ -85,7 +85,7 @@ class Amity:
 
         self.total_no_of_people = len(self.people["fellows"]) + len(self.people["staff"])
 
-        self.show_state()
+        # self.show_state()
 
     def load_people(self, person):
         """Loads people from a text file into amity.
