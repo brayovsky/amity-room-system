@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -15,6 +15,7 @@ class People(Base):
     __tablename__ = 'people'
     person_name = Column(String(250), primary_key=True)
     person_type = Column(String(250), nullable=False)
+    wants_accommodation = Column(Boolean, default=False)
 
 
 class Allocations(Base):

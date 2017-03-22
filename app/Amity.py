@@ -233,15 +233,14 @@ class Amity:
         self.save_current_data(db_name)
 
     def save_current_data(self, db_name):
-        engine = create_engine('sqlite:///' + db_name)
-        Base.metadata.bind = engine
-
-        db_session = sessionmaker(bind=engine)
-        session = db_session()
+        session = self.connect_to_db(db_name)
         try:
             amity = []
             for fellow in self.people["fellows"]:
-                amity.append(People(person_name=fellow, person_type="fellows"))
+                wants_accommodation = False
+                if {fellow, } & self.unbooked_people["livingspaces"]:
+                    wants_accommodation = True
+                amity.append(People(person_name=fellow, person_type="fellows", wants_accommodation=wants_accommodation))
             for staff in self.people["staff"]:
                 amity.append(People(person_name=staff, person_type="staff"))
             for office in self.rooms["offices"]:
