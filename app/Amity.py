@@ -184,8 +184,8 @@ class Amity:
             allocations += livingspace + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
         print(allocations)
 
-        if filename:
-            self.save_to_file(filename, allocations)
+        if filename and self.save_to_file(filename, allocations):
+            print("File complete and saved")
 
     def print_unallocated(self, filename=None):
         """Shows all unallocated people"""
@@ -344,16 +344,17 @@ class Amity:
 
         if os.path.isfile(complete_name):
             print("Please use a file that does not exist in the directory to avoid overwriting your files")
-            return
+            return False
         try:
             allocations_file = open(complete_name, "w+")
         except FileNotFoundError:
             print("Please use a filename as opposed to a directory name")
-            return
+            return False
 
         allocations_file.write(data)
         allocations_file.close()
         print("Data saved to {}".format(complete_name))
+        return True
 
     @staticmethod
     def check_db_exists(db_name):

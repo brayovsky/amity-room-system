@@ -85,10 +85,37 @@ class TestAmity(BaseTestCase):
         assert self.amity.total_no_of_rooms == 3
 
     def test_prints_allocation_to_file(self):
-        pass
+        self.amity.allocations = {
+            "offices": {
+                "America": set()
+            },
+            "livingspaces": {
+                "Africa": set()
+            }
+        }
+        self.amity.print_allocations("testfile")
+        # Load file
+        allocations_file_dir = os.path.dirname(os.path.realpath(__file__)) + "/userdata/"
+        complete_name = os.path.join(allocations_file_dir, "testfile.txt")
+        allocations_file_handle = open(complete_name)
+
+        test_string = []
+        for line in allocations_file_handle:
+            test_string.append(line)
+
+        allocations_file_handle.close()
+        os.remove(complete_name)
+        assert test_string[1] == "America\n"
 
     def test_does_not_overwrite_existing_file(self):
-        pass
+        allocations_file_dir = os.path.dirname(
+            os.path.realpath(__file__)) + "/userdata/"
+        complete_name = os.path.join(allocations_file_dir, "test_overwrite.txt")
+        file_handle = open(complete_name, "w+")
+
+        assert not self.amity.save_to_file("test_overwrite", "one")
+        file_handle.close()
+        os.remove(complete_name)
 
     def test_creates_database(self):
         pass
