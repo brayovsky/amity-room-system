@@ -131,32 +131,6 @@ class TestAmity(BaseTestCase):
 
         os.remove(db_complete_name)
 
-    def test_resets_database(self):
-        engine = create_engine("sqlite:///test_database.db")
-        Base.metadata.create_all(engine)
-        self.amity.reset_db("test_database.db")
-
-        assert not engine.dialect.has_table(engine, "rooms")
-
-        db_path = os.path.dirname(os.path.realpath(__file__)) + "/../"
-        complete_db_path = os.path.join(db_path, "test_database.db")
-        os.remove(complete_db_path)
-
-    def test_checks_for_existing_database(self):
-        engine = create_engine("sqlite:///some_database.db")
-        Base.metadata.create_all(engine)
-        assert self.amity.check_db_exists("some_database.db")
-
-        db_path = os.path.dirname(os.path.realpath(__file__)) + "/../"
-        complete_db_path = os.path.join(db_path, "some_database.db")
-        os.remove(complete_db_path)
-
-        assert not self.amity.check_db_exists("some_database.db")
-
-    # Test saves state to database
-
-    # Test loads state from database
-
 
 class TestRoom(TestCase):
     def setUp(self):
