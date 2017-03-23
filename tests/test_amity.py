@@ -1,9 +1,7 @@
 from unittest import TestCase
 import unittest
 from tests.basetest import BaseTestCase
-from app.Model import Base, Allocations, People, Rooms
 import os
-from sqlalchemy import create_engine, MetaData
 
 
 class TestAmity(BaseTestCase):
@@ -119,17 +117,8 @@ class TestAmity(BaseTestCase):
         file_handle.close()
         os.remove(complete_name)
 
-    def test_creates_database(self):
-        self.amity.create_database("test_database.db")
-
-        db_path = os.path.dirname(
-            os.path.realpath(__file__)) + "/../"
-
-        db_complete_name = os.path.join(db_path, "test_database.db")
-
-        assert os.path.isfile(db_complete_name)
-
-        os.remove(db_complete_name)
+    def test_clears_data(self):
+        pass
 
 
 class TestRoom(TestCase):

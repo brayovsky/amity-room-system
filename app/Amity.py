@@ -225,7 +225,7 @@ class Amity:
             if db_name.lower() in reserved_names:
                 print("{} is a reserved database name. Please use another name"
                       .format(db_name))
-                return
+                return False
             db_name += ".db"
         else:
             db_name = "amity.db"
@@ -263,6 +263,12 @@ class Amity:
                                              person_name=person
                                              )
                                  )
+            for livingspace, people in self.allocations["livingspaces"].items():
+                for person in people:
+                    amity.append(Allocations(room_name=livingspace,
+                                             person_name=person
+                                             )
+                                 )
 
             session.bulk_save_objects(amity)
             session.commit()
@@ -287,14 +293,22 @@ class Amity:
                 allocations = session.query(Allocations)
                 for person in all_people:
                     self.people[person.person_type].add(person.person_name)
+                    self.total_no_of_people += 1
                 for room in all_rooms:
                     self.rooms[room.room_type].add(room.room_name)
+                    self.total_no_of_rooms += 1
+                    # Add all rooms to allocations
+                    self.allocations[room.room_type][room.room_name] = set()
+
                 for allocation in allocations:
-                    room_type = session.query(Rooms.room_type).filter_by(room_name=allocation.room_name).scalar()
+                    room_type = session.query(Rooms.room_type).\
+                        filter_by(room_name=allocation.room_name).scalar()
                     try:
-                        self.allocations[room_type][allocation.room_name].add(allocation.person_name)
+                        self.allocations[room_type][allocation.room_name].\
+                            add(allocation.person_name)
                     except KeyError:
-                        self.allocations[room_type][allocation.room_name] = {allocation.person_name, }
+                        self.allocations[room_type][allocation.room_name] = \
+                            {allocation.person_name, }
 
                 people_names = self.people["fellows"] | self.people["staff"]
                 allocated_people = session.query(Allocations.person_name).distinct()
