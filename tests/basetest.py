@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from Amity import Amity
+from app.Amity import Amity
 
 
 class BaseTestCase(TestCase):

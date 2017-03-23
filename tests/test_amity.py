@@ -1,6 +1,6 @@
 from unittest import TestCase
 import unittest
-from basetest import BaseTestCase
+from tests.basetest import BaseTestCase
 import os
 
 
@@ -25,7 +25,7 @@ class TestAmity(BaseTestCase):
 
     def test_does_not_load_invalid_file(self):
         bad_filename = "badsample.txt"
-        save_path = os.path.dirname(os.path.realpath(__file__)) + "/userdata/"
+        save_path = os.path.dirname(os.path.realpath(__file__)) + "/../app/userdata/"
         complete_name = os.path.join(save_path, bad_filename)
 
         bad_file_handle = open(complete_name, "w+")
@@ -45,7 +45,7 @@ class TestAmity(BaseTestCase):
 
     def test_loads_file(self):
         good_filename = "goodsample.txt"
-        save_path = os.path.dirname(os.path.realpath(__file__)) + "/userdata/"
+        save_path = os.path.dirname(os.path.realpath(__file__)) + "/../app/userdata/"
         good_file = os.path.join(save_path, good_filename)
         good_file_handle = open(good_file, "w+")
         good_file_handle.write("OLUWAFEMI SULE FELLOW Y\r\nDOMINIC WALTERS STAFF")
@@ -95,7 +95,7 @@ class TestAmity(BaseTestCase):
         }
         self.amity.print_allocations("testfile")
         # Load file
-        allocations_file_dir = os.path.dirname(os.path.realpath(__file__)) + "/userdata/"
+        allocations_file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../app/userdata/"
         complete_name = os.path.join(allocations_file_dir, "testfile.txt")
         allocations_file_handle = open(complete_name)
 
@@ -109,7 +109,7 @@ class TestAmity(BaseTestCase):
 
     def test_does_not_overwrite_existing_file(self):
         allocations_file_dir = os.path.dirname(
-            os.path.realpath(__file__)) + "/userdata/"
+            os.path.realpath(__file__)) + "/../app/userdata/"
         complete_name = os.path.join(allocations_file_dir, "test_overwrite.txt")
         file_handle = open(complete_name, "w+")
 

@@ -22,7 +22,7 @@ Options:
 
 import cmd
 from docopt import docopt, DocoptExit
-from Amity import Amity
+from app.Amity import Amity
 from Person import Person
 
 

@@ -1,4 +1,4 @@
-from Rooms import Office, LivingSpace
+from app.Rooms import Office, LivingSpace
 
 
 class Person:

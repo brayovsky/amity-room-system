@@ -1,6 +1,6 @@
-from Person import Fellow, Staff
+from app.Person import Fellow, Staff
 import os
-from Model import People, Rooms, Allocations, Base
+from app.Model import People, Rooms, Allocations, Base
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker, Session
@@ -366,7 +366,7 @@ class Amity:
         else:
             return False
 
-    def show_state(self):
+    def show_state(self):  # pragma: no cover
         print("--------------------------------------------------")
         print("All rooms in amity")
         print("--------------------------------------------------")
