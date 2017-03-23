@@ -220,10 +220,16 @@ class Amity:
               )
 
     def save_amity(self, db_name=None):
+        reserved_names = ["test_database", "some_database"]
         if db_name:
+            if db_name.lower() in reserved_names:
+                print("{} is a reserved database name. Please use another name"
+                      .format(db_name))
+                return
             db_name += ".db"
         else:
             db_name = "amity.db"
+
         # check if database exists
         if self.check_db_exists(db_name):
             self.reset_db(db_name)
@@ -321,12 +327,12 @@ class Amity:
 
     @staticmethod
     def create_database(db_name):
-        engine = create_engine('sqlite:///' + db_name)
+        engine = create_engine("sqlite:///" + db_name)
         Base.metadata.create_all(engine)
 
     @staticmethod
     def reset_db(db_name):
-        engine = create_engine('sqlite:///' + db_name)
+        engine = create_engine("sqlite:///" + db_name)
         Base.metadata.drop_all(engine)
 
     @staticmethod
