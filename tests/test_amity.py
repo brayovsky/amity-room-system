@@ -107,6 +107,9 @@ class TestAmity(BaseTestCase):
         os.remove(complete_name)
         assert test_string[1] == "America\n"
 
+    def test_prints_unallocated_to_file(self):
+        pass
+
     def test_does_not_overwrite_existing_file(self):
         allocations_file_dir = os.path.dirname(
             os.path.realpath(__file__)) + "/../app/userdata/"
@@ -118,6 +121,46 @@ class TestAmity(BaseTestCase):
         os.remove(complete_name)
 
     def test_clears_data(self):
+        self.amity.people = {"fellows": {"Brian", },
+                             "staff": {"Garfield", }
+                             }
+        self.amity.rooms = {"offices": {"America", },
+                            "livingspaces": {"Java", }
+                            }
+        self.amity.unbooked_people = {"offices": set(),
+                                      "livingspaces": set()
+                                      }
+        self.amity.allocations = {
+            "offices": {"America": {"Brian", "Garfield"}},
+            "livingspaces": {"Java": set()}
+            }
+        self.amity.clear_amity_data()
+
+        self.assertDictEqual(self.amity.people, {"fellows": set(),
+                                                 "staff": set()
+                                                 })
+        self.assertDictEqual(self.amity.rooms, {"offices": set(),
+                                                "livingspaces": set()
+                                                })
+        self.assertDictEqual(self.amity.unbooked_people, {"offices": set(),
+                                                          "livingspaces": set()
+                                                          })
+        self.assertDictEqual(self.amity.allocations, {"offices": {},
+                                                      "livingspaces": {}
+                                                      })
+        assert not self.amity.total_no_of_people
+        assert not self.amity.total_no_of_rooms
+
+    def test_allocates_people(self):
+        pass
+
+    def test_does_not_allocate_without_rooms(self):
+        pass
+
+    def test_does_not_allocate_without_people(self):
+        pass
+
+    def test_allocates_person_when_added(self):
         pass
 
 

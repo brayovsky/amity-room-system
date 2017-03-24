@@ -49,8 +49,9 @@ class Amity:
         self.rooms[room_type] |= set_of_new_rooms
         # Add new rooms to allocations
         for room in set_of_new_rooms:
+            print("{} added succesfully".format(room))
             self.allocations[room_type][room] = set()
-        print("Rooms added succesfully")
+
         self.total_no_of_rooms = len(self.rooms["offices"]) + len(self.rooms["livingspaces"])
         # self.show_state()
 
@@ -130,11 +131,11 @@ class Amity:
         """Allocates everyone who does not have a room if rooms are available"""
         if self.total_no_of_rooms == 0:
             print("There are no rooms to allocate people to. Create rooms using the command 'create_room'")
-            return
+            return False
 
         if self.total_no_of_people == 0:
             print("There are no people to allocate rooms to. Add people using the command 'add_person'")
-            return
+            return False
 
         office_pop_list = set()
         living_space_pop_list = set()
@@ -170,8 +171,6 @@ class Amity:
                 break
 
         self.unbooked_people["livingspaces"] -= living_space_pop_list
-
-        print(self.allocations)
 
     def print_allocations(self, filename=None):
         """Shows all room allocations"""

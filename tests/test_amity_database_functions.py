@@ -90,7 +90,6 @@ class TestAmityDatabaseFunctions(BaseTestCase):
         self.assertDictEqual(amity_allocations, {"Brian": "America",
                                                  "Garfield": "America"})
 
-    # Test loads state from database
     def test_loads_state(self):
         # Add data to test_database and check if added
         data = list()
@@ -121,8 +120,15 @@ class TestAmityDatabaseFunctions(BaseTestCase):
         assert self.amity.total_no_of_rooms == 2
         assert self.amity.total_no_of_people == 2
 
+    def test_does_not_create_database_with_reserved_name(self):
+        self.amity.save_amity("some_database")
+        db_path = os.path.dirname(
+            os.path.realpath(__file__)) + "/../"
 
-    # Test does not create a database with a reserved name
+        db_complete_name = os.path.join(db_path, "some_database.db")
+
+        assert not os.path.isfile(db_complete_name)
+
 
 if __name__ == "__main__":
     unittest.main()
