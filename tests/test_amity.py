@@ -172,7 +172,6 @@ class TestRoom(TestCase):
         pass
 
     def test_cannot_add_more_than_six_occupants_to_office(self):
-
         pass
 
     def test_cannot_add_more_than_four_occupants_to_livingspace(self):

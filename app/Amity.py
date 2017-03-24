@@ -85,7 +85,6 @@ class Amity:
             self.unbooked_people["livingspaces"].add(person_name)
 
         self.total_no_of_people = len(self.people["fellows"]) + len(self.people["staff"])
-
         # self.show_state()
 
     def load_people(self, person):
@@ -228,7 +227,7 @@ class Amity:
             db_name += ".db"
         else:
             db_name = "amity.db"
-
+            
         # check if database exists
         if self.check_db_exists(db_name):
             self.reset_db(db_name)
@@ -250,6 +249,7 @@ class Amity:
                 if {fellow, } & self.unbooked_people["livingspaces"]:
                     wants_accommodation = True
                 amity.append(People(person_name=fellow, person_type="fellows", wants_accommodation=wants_accommodation))
+                
             for staff in self.people["staff"]:
                 amity.append(People(person_name=staff, person_type="staff"))
             for office in self.rooms["offices"]:
@@ -384,7 +384,6 @@ class Amity:
             return True
         else:
             return False
-
     def show_state(self):  # pragma: no cover
         print("--------------------------------------------------")
         print("All rooms in amity")

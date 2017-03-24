@@ -25,7 +25,6 @@ from docopt import docopt, DocoptExit
 from app.Amity import Amity
 from Person import Person
 
-
 def docopt_cmd(func):
     """
     This decorator is used to simplify the try/except block and pass the result
