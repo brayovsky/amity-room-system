@@ -22,9 +22,8 @@ Options:
 
 import cmd
 from docopt import docopt, DocoptExit
-from Amity import Amity
+from app.Amity import Amity
 from Person import Person
-
 
 def docopt_cmd(func):
     """
@@ -132,8 +131,6 @@ class AmityInteractive (cmd.Cmd):
     @docopt_cmd
     def do_save_state(self, arg):
         """Usage: save_state [--db=sqlite_database]"""
-        print("Should persist all data to a sqlite database")
-        print(arg)
         amity.save_amity(arg["--db"])
 
     @docopt_cmd

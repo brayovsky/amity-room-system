@@ -1,5 +1,4 @@
-from Rooms import Office, LivingSpace
-
+from app.Rooms import Office, LivingSpace
 
 class Person:
     def __init__(self, person_name):

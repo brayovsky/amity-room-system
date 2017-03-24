@@ -1,6 +1,6 @@
-from Person import Fellow, Staff
+from app.Person import Fellow, Staff
 import os
-from Model import People, Rooms, Allocations, Base
+from app.Model import People, Rooms, Allocations, Base
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker, Session
@@ -49,10 +49,11 @@ class Amity:
         self.rooms[room_type] |= set_of_new_rooms
         # Add new rooms to allocations
         for room in set_of_new_rooms:
+            print("{} added succesfully".format(room))
             self.allocations[room_type][room] = set()
-        print("Rooms added succesfully")
+
         self.total_no_of_rooms = len(self.rooms["offices"]) + len(self.rooms["livingspaces"])
-        self.show_state()
+        # self.show_state()
 
     def add_person(self, person_name, person_type, wants_accommodation=False):
         """Adds a person into amity"""
@@ -84,8 +85,7 @@ class Amity:
             self.unbooked_people["livingspaces"].add(person_name)
 
         self.total_no_of_people = len(self.people["fellows"]) + len(self.people["staff"])
-
-        self.show_state()
+        # self.show_state()
 
     def load_people(self, person):
         """Loads people from a text file into amity.
@@ -130,11 +130,11 @@ class Amity:
         """Allocates everyone who does not have a room if rooms are available"""
         if self.total_no_of_rooms == 0:
             print("There are no rooms to allocate people to. Create rooms using the command 'create_room'")
-            return
+            return False
 
         if self.total_no_of_people == 0:
             print("There are no people to allocate rooms to. Add people using the command 'add_person'")
-            return
+            return False
 
         office_pop_list = set()
         living_space_pop_list = set()
@@ -171,8 +171,6 @@ class Amity:
 
         self.unbooked_people["livingspaces"] -= living_space_pop_list
 
-        print(self.allocations)
-
     def print_allocations(self, filename=None):
         """Shows all room allocations"""
         allocations = "Offices\r\n"
@@ -184,8 +182,8 @@ class Amity:
             allocations += livingspace + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
         print(allocations)
 
-        if filename:
-            self.save_to_file(filename, allocations)
+        if filename and self.save_to_file(filename, allocations):
+            print("File complete and saved")
 
     def print_unallocated(self, filename=None):
         """Shows all unallocated people"""
@@ -220,10 +218,16 @@ class Amity:
               )
 
     def save_amity(self, db_name=None):
+        reserved_names = ["test_database", "some_database"]
         if db_name:
+            if db_name.lower() in reserved_names:
+                print("{} is a reserved database name. Please use another name"
+                      .format(db_name))
+                return False
             db_name += ".db"
         else:
             db_name = "amity.db"
+            
         # check if database exists
         if self.check_db_exists(db_name):
             self.reset_db(db_name)
@@ -233,15 +237,19 @@ class Amity:
         self.save_current_data(db_name)
 
     def save_current_data(self, db_name):
-        engine = create_engine('sqlite:///' + db_name)
-        Base.metadata.bind = engine
+        session = self.connect_to_db(db_name)
 
-        db_session = sessionmaker(bind=engine)
-        session = db_session()
+        if not session:
+            return
+
         try:
             amity = []
             for fellow in self.people["fellows"]:
-                amity.append(People(person_name=fellow, person_type="fellows"))
+                wants_accommodation = False
+                if {fellow, } & self.unbooked_people["livingspaces"]:
+                    wants_accommodation = True
+                amity.append(People(person_name=fellow, person_type="fellows", wants_accommodation=wants_accommodation))
+                
             for staff in self.people["staff"]:
                 amity.append(People(person_name=staff, person_type="staff"))
             for office in self.rooms["offices"]:
@@ -251,6 +259,12 @@ class Amity:
             for office, people in self.allocations["offices"].items():
                 for person in people:
                     amity.append(Allocations(room_name=office,
+                                             person_name=person
+                                             )
+                                 )
+            for livingspace, people in self.allocations["livingspaces"].items():
+                for person in people:
+                    amity.append(Allocations(room_name=livingspace,
                                              person_name=person
                                              )
                                  )
@@ -278,23 +292,32 @@ class Amity:
                 allocations = session.query(Allocations)
                 for person in all_people:
                     self.people[person.person_type].add(person.person_name)
+                    self.total_no_of_people += 1
                 for room in all_rooms:
                     self.rooms[room.room_type].add(room.room_name)
-                for allocation in allocations:
-                    room_type = session.query(Rooms.room_type).filter_by(room_name=allocation.room_name).scalar()
-                    try:
-                        self.allocations[room_type][allocation.room_name].add(allocation.person_name)
-                    except KeyError:
-                        self.allocations[room_type][allocation.room_name] = {allocation.person_name, }
+                    self.total_no_of_rooms += 1
+                    # Add all rooms to allocations
+                    self.allocations[room.room_type][room.room_name] = set()
 
-                # Can currently only pick unbooked people waiting for offices
+                for allocation in allocations:
+                    room_type = session.query(Rooms.room_type).\
+                        filter_by(room_name=allocation.room_name).scalar()
+                    try:
+                        self.allocations[room_type][allocation.room_name].\
+                            add(allocation.person_name)
+                    except KeyError:
+                        self.allocations[room_type][allocation.room_name] = \
+                            {allocation.person_name, }
+
                 people_names = self.people["fellows"] | self.people["staff"]
                 allocated_people = session.query(Allocations.person_name).distinct()
-                allocated_names = set(
-                                    [allocated_person[0] for allocated_person in allocated_people]
-                                    )
+                allocated_names = set([allocated_person[0] for allocated_person in allocated_people])
                 unbooked_people = people_names - allocated_names
                 self.unbooked_people["offices"] = unbooked_people
+
+                unaccommodated_fellows = session.query(People.person_name).filter_by(wants_accommodation=True)
+                unaccommodated_fellow_names = set([fellow[0] for fellow in unaccommodated_fellows])
+                self.unbooked_people["livingspaces"] = unaccommodated_fellow_names
 
         except sqlalchemy.exc.OperationalError:
             print("Incompatible database format. Please use a database created by amity system")
@@ -317,12 +340,12 @@ class Amity:
 
     @staticmethod
     def create_database(db_name):
-        engine = create_engine('sqlite:///' + db_name)
+        engine = create_engine("sqlite:///" + db_name)
         Base.metadata.create_all(engine)
 
     @staticmethod
     def reset_db(db_name):
-        engine = create_engine('sqlite:///' + db_name)
+        engine = create_engine("sqlite:///" + db_name)
         Base.metadata.drop_all(engine)
 
     @staticmethod
@@ -340,16 +363,17 @@ class Amity:
 
         if os.path.isfile(complete_name):
             print("Please use a file that does not exist in the directory to avoid overwriting your files")
-            return
+            return False
         try:
             allocations_file = open(complete_name, "w+")
         except FileNotFoundError:
             print("Please use a filename as opposed to a directory name")
-            return
+            return False
 
         allocations_file.write(data)
         allocations_file.close()
         print("Data saved to {}".format(complete_name))
+        return True
 
     @staticmethod
     def check_db_exists(db_name):
@@ -360,8 +384,7 @@ class Amity:
             return True
         else:
             return False
-
-    def show_state(self):
+    def show_state(self):  # pragma: no cover
         print("--------------------------------------------------")
         print("All rooms in amity")
         print("--------------------------------------------------")
