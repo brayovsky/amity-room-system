@@ -75,6 +75,9 @@ class TestAmity(BaseTestCase):
 
         assert self.amity.total_no_of_people == 1
 
+    def test_capitalizes_person(self):
+        pass
+
     def test_does_not_add_room_twice(self):
         self.amity.add_room(["France", "Britain", "France"], "offices")
 
@@ -83,6 +86,10 @@ class TestAmity(BaseTestCase):
         self.amity.add_room(["France", "Britain", "France", "Russia"], "livingspaces")
 
         assert self.amity.total_no_of_rooms == 3
+
+    def test_capitalizes_room(self):
+        self.amity.add_room(["yoUnda"], "offices")
+        assert "Younda" in self.amity.rooms
 
     def test_prints_allocation_to_file(self):
         self.amity.allocations = {

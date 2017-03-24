@@ -25,6 +25,8 @@ from docopt import docopt, DocoptExit
 from app.Amity import Amity
 from Person import Person
 
+amity = Amity()
+
 
 def docopt_cmd(func):
     """
@@ -155,6 +157,5 @@ class AmityInteractive (cmd.Cmd):
 
 if __name__ == '__main__':
     opt = docopt(__doc__, argv="-i")
-    amity = Amity()
     AmityInteractive().cmdloop()
 

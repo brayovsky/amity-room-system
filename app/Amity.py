@@ -1,4 +1,6 @@
 from app.Person import Fellow, Staff
+from app.Rooms import Office, LivingSpace
+from app.settings import *
 import os
 from app.Model import People, Rooms, Allocations, Base
 import sqlalchemy
@@ -7,53 +9,36 @@ from sqlalchemy.orm import sessionmaker, Session
 
 
 class Amity:
-    def __init__(self):
-        self.total_no_of_rooms = 0
-        self.total_no_of_people = 0
-        self.rooms = {"offices": set(),
-                      "livingspaces": set()
-                      }
-        self.people = {"fellows": set(),
-                       "staff": set()
-                       }
-        self.unbooked_people = {"offices": set(),
-                                "livingspaces": set()
-                                }
-        self.allocations = {"offices": {},
-                            "livingspaces": {}
-                            }
+    total_no_of_rooms = 0
+    total_no_of_people = 0
+    rooms = {}
+    people = {}
+    unbooked_people = {"offices": set(),
+                       "livingspaces": set()
+                        }
 
     def add_room(self, room_names, room_type):
         """Adds rooms into amity"""
 
         # Capitalize all room names
-        room_names = [room_name.capitalize() for room_name in room_names]
-        set_of_new_rooms = set(room_names)
+        room_names = set(room_names)
 
-        new_set_length = len(set_of_new_rooms | self.rooms["offices"] | self.rooms["livingspaces"])
-        expected_length = len(self.rooms["offices"]) + len(self.rooms["livingspaces"]) + len(set_of_new_rooms)
+        # go through rooms adding each
+        for room in room_names:
+            room = room.capitalize()
+            if room not in self.rooms:
+                if room_type == "offices":
+                    self.rooms[room] = Office(room)
+                    print("{} successfully added to Amity".format(room))
+                else:
+                    self.rooms[room] = LivingSpace(room)
+                    print("{} successfully added to Amity".format(room))
+                self.total_no_of_rooms += 1
+            else:
+                print("{} not added to amity as it already exists in Amity".
+                      format(room))
 
-        if new_set_length < expected_length:
-            # Duplicate exists
-            print("There are rooms that already exist. Duplicate rooms will be removed. The duplicates are:")
-
-            # Get duplicates and remove them from set_of_new_rooms
-            all_rooms = self.rooms["livingspaces"] | self.rooms["offices"]
-            duplicate_rooms = set_of_new_rooms & all_rooms
-
-            for duplicate_room in duplicate_rooms:
-                print(duplicate_room)
-                set_of_new_rooms.discard(duplicate_room)
-
-        # Add new rooms
-        self.rooms[room_type] |= set_of_new_rooms
-        # Add new rooms to allocations
-        for room in set_of_new_rooms:
-            print("{} added succesfully".format(room))
-            self.allocations[room_type][room] = set()
-
-        self.total_no_of_rooms = len(self.rooms["offices"]) + len(self.rooms["livingspaces"])
-        # self.show_state()
+        self.show_state()
 
     def add_person(self, person_name, person_type, wants_accommodation=False):
         """Adds a person into amity"""
@@ -386,24 +371,9 @@ class Amity:
             return False
 
     def show_state(self):  # pragma: no cover
-        print("--------------------------------------------------")
-        print("All rooms in amity")
-        print("--------------------------------------------------")
-        print(self.rooms)
-        print("--------------------------------------------------")
-        print("All people in Amity")
-        print("--------------------------------------------------")
-        print(self.people)
-        print("--------------------------------------------------")
-        print("People to be allocated")
-        print("--------------------------------------------------")
-        print(self.unbooked_people)
-        print("--------------------------------------------------")
-        print("Allocations are")
-        print("--------------------------------------------------")
-        print(self.allocations)
-        print("--------------------------------------------------")
-        print("Total number of people is {0}".format(self.total_no_of_people))
-        print("--------------------------------------------------")
-        print("Total number of rooms is {0}".format(self.total_no_of_rooms))
-        print("--------------------------------------------------")
+        if not DEBUG:
+            return
+        print("Rooms are\n{}".format("-"*65))
+        for room_name, amity_room in self.rooms.items():
+            print(amity_room.name + " -> ")
+            print(amity_room.occupants)

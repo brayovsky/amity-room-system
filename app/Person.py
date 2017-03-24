@@ -2,8 +2,9 @@ from app.Rooms import Office, LivingSpace
 
 
 class Person:
-    def __init__(self, person_name):
+    def __init__(self, person_name, office):
         self.name = person_name
+        self.office = office
         self.added = False
         self.alarm = False
 
@@ -67,14 +68,13 @@ class Person:
 
 
 class Staff(Person):
-    def __init__(self, person_name):
-        super(Staff, self).__init__(person_name)
-        pass
+    pass
 
 
 class Fellow(Person):
-    def __init__(self, person_name):
+    def __init__(self, person_name, office, livingspace):
         super(Fellow, self).__init__(person_name)
+        self.livingspace = livingspace
 
     def book_living_space(self, allocations):
         self.added = False
