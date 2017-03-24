@@ -1,6 +1,7 @@
 from app.Person import Fellow, Staff
 from app.Rooms import Office, LivingSpace
 from app.settings import *
+import random
 import os
 from app.Model import People, Rooms, Allocations, Base
 import sqlalchemy
@@ -11,6 +12,8 @@ from sqlalchemy.orm import sessionmaker, Session
 class Amity:
     total_no_of_rooms = 0
     total_no_of_people = 0
+    total_no_of_offices = 0
+    total_no_of_livingspaces = 0
     rooms = {}
     people = {}
     unbooked_people = {"offices": set(),
@@ -30,9 +33,11 @@ class Amity:
                 if room_type == "offices":
                     self.rooms[room] = Office(room)
                     print("{} successfully added to Amity".format(room))
+                    self.total_no_of_offices += 1
                 else:
                     self.rooms[room] = LivingSpace(room)
                     print("{} successfully added to Amity".format(room))
+                    self.total_no_of_livingspaces += 1
                 self.total_no_of_rooms += 1
             else:
                 print("{} not added to amity as it already exists in Amity".
@@ -44,34 +49,90 @@ class Amity:
         """Adds a person into amity"""
 
         person_name = person_name.capitalize()
-        person = {person_name, }
 
-        # Check for duplicates in other peron types
-        if person_type == "fellows":
-            opposite_person_type = "staff"
-        elif person_type == "staff":
-            opposite_person_type = "fellows"
-
-        new_set = self.people[opposite_person_type] | person
-        expected_length = len(self.people[opposite_person_type]) + 1
-
-        if len(new_set) < expected_length:
-            print("{} Already exists. He/She cannot be re-added.".format(person_name))
+        # Check for duplicates
+        if person_name in self.people:
+            print("{} already exists in amity and cannot be re-added".
+                  format(person_name))
             return
 
         # Staff should not have accommodation
         if person_type == "staff" and wants_accommodation:
-            print("Staff cannot have accommodation")
+            print("{} will be added but cannot be accomodated as he is a staff"
+                  " member".format(person_name))
+            wants_accommodation = False
 
-        self.people[person_type] |= person
-        self.unbooked_people["offices"].add(person_name)
+        # Add the person
+        if person_type == "fellows":
+            self.people[person_name] = Fellow(person_name)
+        else:
+            self.people[person_name] = Staff(person_name)
 
-        if person_type == "fellows" and wants_accommodation:
-            self.unbooked_people["livingspaces"].add(person_name)
+        # Assign room
+        allocation = self.assign_random_room(person_name, wants_accommodation)
 
-        self.total_no_of_people = len(self.people["fellows"]) + len(self.people["staff"])
+        if allocation["office"]:
+            print("{} has been added and assigned the office {}".
+                  format(person_name, self.people[person_name].office))
+        elif not allocation["office"]:
+            print("{} has been added but has not been assigned an office".
+                  format(person_name))
 
-        # self.show_state()
+        if not wants_accommodation:
+            self.show_state()
+            return
+
+        if allocation["livingspace"]:
+            print("{} has been assigned the livingspace {}".
+                  format(person_name, self.people[person_name].livingspace))
+        elif not allocation["livingspace"]:
+            print("{} has not been assigned a livingspace".format(person_name))
+
+        self.show_state()
+
+    def assign_random_room(self, person_name, wants_accommodation):
+        rooms = list(self.rooms.values())
+        perused_offices = set()
+        assigned_office = False
+        while not assigned_office:
+            try:
+                amity_room = random.choice(rooms)
+                if type(amity_room) == LivingSpace:
+                    continue
+            except IndexError:
+                break
+            if amity_room not in perused_offices and \
+               type(amity_room) == Office and \
+               len(amity_room.occupants) < amity_room.max_no_of_occupants:
+                amity_room.occupants.add(person_name)
+                self.people[person_name].office = amity_room.name
+                assigned_office = True
+            perused_offices.add(amity_room)
+            if len(perused_offices) == self.total_no_of_offices:
+                break
+
+        assigned_accommodation = False
+        perused_livingspaces = set()
+        if wants_accommodation:
+            while not assigned_accommodation:
+                try:
+                    amity_room = random.choice(rooms)
+                    if type(amity_room) == Office:
+                        continue
+                except IndexError:
+                    break
+                if amity_room not in perused_livingspaces and \
+                   type(amity_room) == LivingSpace and \
+                   len(amity_room.occupants) < amity_room.max_no_of_occupants:
+                    amity_room.occupants.add(person_name)
+                    self.people[person_name].livingspace = amity_room.name
+                    assigned_accommodation = True
+                perused_livingspaces.add(amity_room)
+                if len(perused_livingspaces) == self.total_no_of_offices:
+                    break
+
+        return {"office": assigned_office,
+                "livingspace": assigned_accommodation}
 
     def load_people(self, person):
         """Loads people from a text file into amity.
@@ -377,3 +438,11 @@ class Amity:
         for room_name, amity_room in self.rooms.items():
             print(amity_room.name + " -> ")
             print(amity_room.occupants)
+        print("People are\n{}".format("-"*65))
+        for person_name, amity_person in self.people.items():
+            print(amity_person.name + " -> " )
+            print(amity_person.office)
+            try:
+                print(amity_person.livingspace)
+            except AttributeError:
+                pass
