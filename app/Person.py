@@ -72,8 +72,9 @@ class Staff(Person):
 
 
 class Fellow(Person):
-    def __init__(self, person_name):
+    def __init__(self, person_name, wants_accommodation):
         super(Fellow, self).__init__(person_name)
+        self.wants_accommodation = wants_accommodation
         self.livingspace = None
 
     def book_living_space(self, allocations):

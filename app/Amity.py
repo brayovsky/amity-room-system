@@ -64,17 +64,18 @@ class Amity:
 
         # Add the person
         if person_type == "fellows":
-            self.people[person_name] = Fellow(person_name)
+            self.people[person_name] = Fellow(person_name, wants_accommodation)
         else:
             self.people[person_name] = Staff(person_name)
+        self.total_no_of_people += 1
 
         # Assign room
         allocation = self.assign_random_room(person_name, wants_accommodation)
 
-        if allocation["office"]:
+        if allocation["office"]["assigned"]:
             print("{} has been added and assigned the office {}".
                   format(person_name, self.people[person_name].office))
-        elif not allocation["office"]:
+        elif not allocation["office"]["assigned"]:
             print("{} has been added but has not been assigned an office".
                   format(person_name))
 
@@ -82,19 +83,34 @@ class Amity:
             self.show_state()
             return
 
-        if allocation["livingspace"]:
+        if allocation["livingspace"]["assigned"]:
             print("{} has been assigned the livingspace {}".
                   format(person_name, self.people[person_name].livingspace))
-        elif not allocation["livingspace"]:
+        elif not allocation["livingspace"]["assigned"]:
             print("{} has not been assigned a livingspace".format(person_name))
 
         self.show_state()
 
     def assign_random_room(self, person_name, wants_accommodation):
+        """Assigns a random room to a person"""
         rooms = list(self.rooms.values())
+        livingspace_reason = None
+        office_reason = None
+
         perused_offices = set()
-        assigned_office = False
-        while not assigned_office:
+        is_assigned_office = False
+        assign_office = True
+
+        if not self.total_no_of_offices:
+            office_reason = "You have run out of offices"
+
+        if self.people[person_name].office:
+            # has been assigned an office
+            is_assigned_office = False
+            assign_office = False
+            office_reason = "{} already has an office".format(person_name)
+
+        while assign_office and self.total_no_of_offices:
             try:
                 amity_room = random.choice(rooms)
                 if type(amity_room) == LivingSpace:
@@ -106,15 +122,26 @@ class Amity:
                len(amity_room.occupants) < amity_room.max_no_of_occupants:
                 amity_room.occupants.add(person_name)
                 self.people[person_name].office = amity_room.name
-                assigned_office = True
+                is_assigned_office = True
+                assign_office = False
             perused_offices.add(amity_room)
             if len(perused_offices) == self.total_no_of_offices:
+                office_reason = "You have run out of offices"
                 break
 
-        assigned_accommodation = False
+        is_assigned_accommodation = False
+        assign_accommodation = True
         perused_livingspaces = set()
         if wants_accommodation:
-            while not assigned_accommodation:
+            if self.people[person_name].livingspace:
+                # has been assigned a livingspace
+                is_assigned_accommodation = False
+                assign_accommodation = False
+                livingspace_reason = "{} already has a livingspace".\
+                    format(person_name)
+            if not self.total_no_of_livingspaces:
+                livingspace_reason = "You have run out of livingspaces"
+            while assign_accommodation and self.total_no_of_livingspaces:
                 try:
                     amity_room = random.choice(rooms)
                     if type(amity_room) == Office:
@@ -126,20 +153,27 @@ class Amity:
                    len(amity_room.occupants) < amity_room.max_no_of_occupants:
                     amity_room.occupants.add(person_name)
                     self.people[person_name].livingspace = amity_room.name
-                    assigned_accommodation = True
+                    is_assigned_accommodation = True
+                    assign_accommodation = False
                 perused_livingspaces.add(amity_room)
-                if len(perused_livingspaces) == self.total_no_of_offices:
+                if len(perused_livingspaces) == self.total_no_of_livingspaces:
+                    livingspace_reason = "You have run out of livingspaces"
                     break
+        else:
+            livingspace_reason = "{} does not want accommodation". \
+                format(person_name)
 
-        return {"office": assigned_office,
-                "livingspace": assigned_accommodation}
+        return {"office": {"assigned": is_assigned_office,
+                           "reason": office_reason},
+                "livingspace": {"assigned": is_assigned_accommodation,
+                                "reason": livingspace_reason}}
 
-    def load_people(self, person):
+    def load_people(self, person_line):
         """Loads people from a text file into amity.
            A sample line of the file is:
            FIRSTNAME LASTNAME FELLOW|STAFF Y
         """
-        person = person.split()
+        person = person_line.split()
 
         # Combine first and last names
         try:
@@ -160,8 +194,9 @@ class Amity:
             return
 
         if len(person) == 3 and person[2] != "Y":
-            print("Wrong format encountered. Please check the line at '{}'. \
-            The fourth word should be Y or none at all".format(person[0]))
+            print("Wrong format encountered. Please check the line at '{}'. "
+                  "The fourth word should be Y or none at all".
+                  format(person[0]))
             return
 
         wants_accommodation = False
@@ -173,60 +208,80 @@ class Amity:
         elif person[1] == "FELLOW":
             self.add_person(person[0], "fellows", wants_accommodation)
 
+        self.show_state()
+
     def allocate(self):
-        """Allocates everyone who does not have a room if rooms are available"""
+        """Allocates everyone who does not have
+        a room if rooms are available"""
         if self.total_no_of_rooms == 0:
-            print("There are no rooms to allocate people to. Create rooms using the command 'create_room'")
+            print("There are no rooms to allocate people to."
+                  "Create rooms using the command 'create_room'")
             return False
 
         if self.total_no_of_people == 0:
-            print("There are no people to allocate rooms to. Add people using the command 'add_person'")
+            print("There are no people to allocate rooms to."
+                  " Add people using the command 'add_person'")
             return False
 
-        office_pop_list = set()
-        living_space_pop_list = set()
-        for person in self.unbooked_people["offices"]:
-            # Determine if person is staff or fellow
-            if len(set([person]) & self.people["staff"]) > 0:
-                staff = Staff(person)
-                staff.book_office(self.allocations["offices"])
-                if staff.added:
-                    office_pop_list.add(staff.name)
+        # Check if person already allocated
+        # Return reason for not allocating from assign_random_room()
+        for person_name, person in self.people.items():
+            if type(person) == Fellow:
+                is_fellow = True
+                allocation = \
+                    self.assign_random_room(person.name,
+                                            person.wants_accommodation)
+            else:
+                is_fellow = False
+                allocation = \
+                    self.assign_random_room(person.name,
+                                            wants_accommodation=False)
 
-                if staff.alarm:
-                    break
+            if allocation["office"]["assigned"]:
+                print("{} has been assigned the office {}".
+                      format(person.name, person.office))
+            elif not allocation["office"]["assigned"]:
+                print("{} has been not been assigned an office. {}"
+                      .format(person.name,
+                              allocation["office"]["reason"]))
 
-            elif len(set([person]) & self.people["fellows"]) > 0:
-                fellow = Fellow(person)
-                fellow.book_office(self.allocations["offices"])
-                if fellow.added:
-                    office_pop_list.add(fellow.name)
+            if allocation["livingspace"]["assigned"] and is_fellow:
+                print("{} has been assigned the livingspace {}".
+                      format(person.name, person.livingspace))
+            elif not allocation["livingspace"]["assigned"] and is_fellow:
+                print("{} has been not been assigned a livingspace {}".
+                      format(person.name,
+                             allocation["livingspace"]["reason"]))
 
-                if fellow.alarm:
-                    break
-
-        self.unbooked_people["offices"] -= office_pop_list
-
-        for person in self.unbooked_people["livingspaces"]:
-            fellow = Fellow(person)
-            fellow.book_living_space(self.allocations["livingspaces"])
-            if fellow.added:
-                living_space_pop_list.add(fellow.name)
-
-            if fellow.alarm:
-                break
-
-        self.unbooked_people["livingspaces"] -= living_space_pop_list
+        self.show_state()
 
     def print_allocations(self, filename=None):
         """Shows all room allocations"""
         allocations = "Offices\r\n"
-        for office, people in self.allocations["offices"].items():
-            allocations += office + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
+        if self.total_no_of_offices:
+            for room_name, room in self.rooms.items():
+                if type(room) == Office and room.occupants:
+                    allocations += room.name + "\r\n" + "-"*100 + "\r\n" + \
+                                   ", ".join(room.occupants) + "\r\n"*2
+                elif type(room) == Office and not room.occupants:
+                    allocations += room.name + "\r\n" + "-"*100 + "\r\n" + \
+                                   room.name + " has no occupants" + "\r\n"*2
+        else:
+            allocations += "There are no offices that have been added to Amity"
 
         allocations += "\r\nLiving Spaces\r\n"
-        for livingspace, people in self.allocations["livingspaces"].items():
-            allocations += livingspace + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
+        if self.total_no_of_livingspaces:
+            for room_name, room in self.rooms.items():
+                if type(room) == LivingSpace and room.occupants:
+                    allocations += room.name + "\r\n" + "-"*100 + "\r\n" + \
+                                   ", ".join(room.occupants) + "\r\n"*2
+                elif type(room) == LivingSpace and not room.occupants:
+                    allocations += room.name + "\r\n" + "-" * 100 + "\r\n" + \
+                                   room.name + " has no occupants" + "\r\n" * 2
+        else:
+            allocations += \
+                "There are no livingspaces that have been added to Amity"
+
         print(allocations)
 
         if filename and self.save_to_file(filename, allocations):
@@ -436,11 +491,11 @@ class Amity:
             return
         print("Rooms are\n{}".format("-"*65))
         for room_name, amity_room in self.rooms.items():
-            print(amity_room.name + " -> ")
+            print(amity_room.name + "(" + str(type(amity_room)) + ") -> ")
             print(amity_room.occupants)
         print("People are\n{}".format("-"*65))
         for person_name, amity_person in self.people.items():
-            print(amity_person.name + " -> " )
+            print(amity_person.name + " -> ")
             print(amity_person.office)
             try:
                 print(amity_person.livingspace)
