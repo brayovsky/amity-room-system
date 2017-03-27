@@ -1,12 +1,15 @@
-from app.Person import Fellow, Staff
-from app.Rooms import Office, LivingSpace
-from app.settings import *
 import random
 import os
-from app.Model import People, Rooms, Allocations, Base
+
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker, Session
+
+from app.Person import Fellow, Staff
+from app.Rooms import Office, LivingSpace
+from app.settings import *
+from app.Model import People, Rooms, Allocations, Base
+
 
 
 class Amity:
@@ -16,9 +19,6 @@ class Amity:
     total_no_of_livingspaces = 0
     rooms = {}
     people = {}
-    unbooked_people = {"offices": set(),
-                       "livingspaces": set()
-                        }
 
     def add_room(self, room_names, room_type):
         """Adds rooms into amity"""
@@ -358,34 +358,35 @@ class Amity:
             return
 
         try:
-            amity = []
-            for fellow in self.people["fellows"]:
-                wants_accommodation = False
-                if {fellow, } & self.unbooked_people["livingspaces"]:
-                    wants_accommodation = True
-                amity.append(People(person_name=fellow, person_type="fellows", wants_accommodation=wants_accommodation))
-            for staff in self.people["staff"]:
-                amity.append(People(person_name=staff, person_type="staff"))
-            for office in self.rooms["offices"]:
-                amity.append(Rooms(room_name=office, room_type="offices"))
-            for livingspace in self.rooms["livingspaces"]:
-                amity.append(Rooms(room_name=livingspace, room_type="livingspaces"))
-            for office, people in self.allocations["offices"].items():
-                for person in people:
-                    amity.append(Allocations(room_name=office,
-                                             person_name=person
-                                             )
-                                 )
-            for livingspace, people in self.allocations["livingspaces"].items():
-                for person in people:
-                    amity.append(Allocations(room_name=livingspace,
-                                             person_name=person
-                                             )
-                                 )
+            amity = list()
+            for person in self.people.values():
+                if person.office:
+                    amity.append(Allocations(person_name=person.name,
+                                             room_name=person.office))
+                if type(person) == Fellow:
+                    amity.append(People(person_name=person.name,
+                                        person_type="fellow",
+                                        wants_accommodation=
+                                        person.wants_accommodation))
+                    if person.livingspace:
+                        amity.append(Allocations(person_name=person.name,
+                                                 room_name=person.livingspace))
+                else:
+                    amity.append(People(person_name=person.name,
+                                        person_type="staff"))
+
+            for room in self.rooms.values():
+                if type(room) == Office:
+                    amity.append(Rooms(room_name=room.name,
+                                       room_type="office"))
+                else:
+                    amity.append(Rooms(room_name=room.name,
+                                       room_type="livingspace"))
 
             session.bulk_save_objects(amity)
             session.commit()
             print("Data saved to {}".format(db_name))
+
         except sqlalchemy.exc.IntegrityError:
             print("New data added to database")
 
@@ -398,59 +399,61 @@ class Amity:
 
         try:
             session = self.connect_to_db(db_name)
-            if session:
-                # Clear data
-                self.clear_amity_data()
-                all_people = session.query(People)
-                all_rooms = session.query(Rooms)
-                allocations = session.query(Allocations)
-                for person in all_people:
-                    self.people[person.person_type].add(person.person_name)
-                    self.total_no_of_people += 1
-                for room in all_rooms:
-                    self.rooms[room.room_type].add(room.room_name)
-                    self.total_no_of_rooms += 1
-                    # Add all rooms to allocations
-                    self.allocations[room.room_type][room.room_name] = set()
+            if not session:
+                return
 
-                for allocation in allocations:
-                    room_type = session.query(Rooms.room_type).\
-                        filter_by(room_name=allocation.room_name).scalar()
-                    try:
-                        self.allocations[room_type][allocation.room_name].\
-                            add(allocation.person_name)
-                    except KeyError:
-                        self.allocations[room_type][allocation.room_name] = \
-                            {allocation.person_name, }
+            # Clear data
+            self.clear_amity_data()
+            all_people = session.query(People)
+            all_rooms = session.query(Rooms)
+            allocations = session.query(Allocations)
+            for person in all_people:
+                if person.person_type == "staff":
+                    self.people[person.person_name] = \
+                        Staff(person.person_name)
+                else:
+                    self.people[person.person_name] = \
+                        Fellow(person.person_name,
+                               wants_accommodation=
+                               person.wants_accommodation)
 
-                people_names = self.people["fellows"] | self.people["staff"]
-                allocated_people = session.query(Allocations.person_name).distinct()
-                allocated_names = set([allocated_person[0] for allocated_person in allocated_people])
-                unbooked_people = people_names - allocated_names
-                self.unbooked_people["offices"] = unbooked_people
+            for room in all_rooms:
+                if room.room_type == "office":
+                    self.rooms[room.room_name] = Office(room.room_name)
+                else:
+                    self.rooms[room.room_name] = \
+                        LivingSpace(room.room_name)
 
-                unaccommodated_fellows = session.query(People.person_name).filter_by(wants_accommodation=True)
-                unaccommodated_fellow_names = set([fellow[0] for fellow in unaccommodated_fellows])
-                self.unbooked_people["livingspaces"] = unaccommodated_fellow_names
+            for allocation in allocations:
+                if type(self.rooms[allocation.room_name]) == Office:
+                    self.people[allocation.person_name].office = \
+                        allocation.room_name
+                    self.rooms[allocation.room_name].occupants.\
+                        add(allocation.person_name)
+                    self.total_no_of_offices += 1
+                else:
+                    self.people[allocation.person_name].livingspace = \
+                        allocation.room_name
+                    self.rooms[allocation.room_name].occupants. \
+                        add(allocation.person_name)
+                    self.total_no_of_livingspaces += 1
+
+            self.total_no_of_rooms = len(self.rooms)
+            self.total_no_of_people = len(self.people)
+
+            print("Data from {} has been loaded.".format(db_name))
 
         except sqlalchemy.exc.OperationalError:
-            print("Incompatible database format. Please use a database created by amity system")
+            print("Incompatible database format. "
+                  "Please use a database created by amity system")
 
     def clear_amity_data(self):
         self.total_no_of_rooms = 0
         self.total_no_of_people = 0
-        self.rooms = {"offices": set(),
-                      "livingspaces": set()
-                      }
-        self.people = {"fellows": set(),
-                       "staff": set()
-                       }
-        self.unbooked_people = {"offices": set(),
-                                "livingspaces": set()
-                                }
-        self.allocations = {"offices": {},
-                            "livingspaces": {}
-                            }
+        self.total_no_of_offices = 0
+        self.total_no_of_livingspaces = 0
+        self.rooms = {}
+        self.people = {}
 
     @staticmethod
     def create_database(db_name):
