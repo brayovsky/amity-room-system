@@ -289,13 +289,27 @@ class Amity:
 
     def print_unallocated(self, filename=None):
         """Shows all unallocated people"""
+        if not self.total_no_of_people:
+            print("There are no people in Amity. Add people first")
+            return
+
         unallocations = "Offices\r\n"
-        for people in self.unbooked_people["offices"]:
-            unallocations += people + "\r\n"
+        for person_name, person in self.people.items():
+            if not person.office:
+                unallocations += person_name + "\r\n"
+
+        if unallocations == "Offices\r\n":
+            unallocations += "Everyone has been placed in an office"
 
         unallocations += "\r\nLiving Spaces\r\n"
-        for people in self.unbooked_people["livingspaces"]:
-            unallocations += people + "\r\n"
+        for person_name, person in self.people.items():
+            if type(person) == Fellow and person.wants_accommodation \
+                    and not person.livingspace:
+                unallocations += person_name + "\r\n"
+
+        if unallocations[-17:] == "\r\nLiving Spaces\r\n":
+            unallocations += "Every eligible fellow has been accommodated"
+
         print(unallocations)
 
         if filename:
@@ -304,20 +318,19 @@ class Amity:
     def print_room(self, room_name):
         # ascertain whether room is in amity and is office or livingspace
         room_name = room_name.capitalize()
-        room_set = {room_name, }
-        if len(self.rooms["offices"] & room_set) > 0:
-            room_type = "offices"
-        elif len(self.rooms["livingspaces"] & room_set) > 0:
-            room_type = "livingspaces"
-        else:
-            print("{} does not exist in Amity. Create a room using the command 'create_room'".format(room_name))
-            return
-
-        print("\n{}\n{}\n{}\n".format(room_name,
-                                      "_"*100,
-                                      ", ".join(self.allocations[room_type][room_name])
-                                      )
-              )
+        try:
+            room = self.rooms[room_name]
+            if not room.occupants:
+                print("{} has no occupants".format(room.name))
+                return
+            print("\n{}\n{}\n{}\n".format(room.name,
+                                          "_"*100,
+                                          ", ".join(room.occupants)
+                                          )
+                  )
+        except KeyError:
+            print("{} does not exist in Amity. Create the room first".
+                  format(room_name))
 
     def save_amity(self, db_name=None):
         reserved_names = ["test_database", "some_database"]
