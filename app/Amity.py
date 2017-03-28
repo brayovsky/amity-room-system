@@ -1,98 +1,229 @@
-from app.Person import Fellow, Staff
+import random
 import os
-from app.Model import People, Rooms, Allocations, Base
+
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker, Session
 
+from app.Person import Fellow, Staff
+from app.Rooms import Office, LivingSpace
+from app.settings import *
+from app.Model import People, Rooms, Allocations, Base
+
 
 class Amity:
-    def __init__(self):
-        self.total_no_of_rooms = 0
-        self.total_no_of_people = 0
-        self.rooms = {"offices": set(),
-                      "livingspaces": set()
-                      }
-        self.people = {"fellows": set(),
-                       "staff": set()
-                       }
-        self.unbooked_people = {"offices": set(),
-                                "livingspaces": set()
-                                }
-        self.allocations = {"offices": {},
-                            "livingspaces": {}
-                            }
+    total_no_of_rooms = 0
+    total_no_of_people = 0
+    total_no_of_offices = 0
+    total_no_of_livingspaces = 0
+    rooms = {}
+    people = {}
 
     def add_room(self, room_names, room_type):
         """Adds rooms into amity"""
 
-        # Capitalize all room names
-        room_names = [room_name.capitalize() for room_name in room_names]
-        set_of_new_rooms = set(room_names)
+        # Remove duplicates
+        room_names = set(room_names)
 
-        new_set_length = len(set_of_new_rooms | self.rooms["offices"] | self.rooms["livingspaces"])
-        expected_length = len(self.rooms["offices"]) + len(self.rooms["livingspaces"]) + len(set_of_new_rooms)
+        # go through rooms adding each
+        for room in room_names:
+            room = room.capitalize()
+            if room not in self.rooms.keys():
+                if room_type is "offices":
+                    self.rooms[room] = Office(room)
+                    print("{} successfully added to Amity".format(room))
+                    self.total_no_of_offices += 1
+                else:
+                    self.rooms[room] = LivingSpace(room)
+                    print("{} successfully added to Amity".format(room))
+                    self.total_no_of_livingspaces += 1
+            else:
+                print("{} not added to amity as it already exists in Amity".
+                      format(room))
 
-        if new_set_length < expected_length:
-            # Duplicate exists
-            print("There are rooms that already exist. Duplicate rooms will be removed. The duplicates are:")
-
-            # Get duplicates and remove them from set_of_new_rooms
-            all_rooms = self.rooms["livingspaces"] | self.rooms["offices"]
-            duplicate_rooms = set_of_new_rooms & all_rooms
-
-            for duplicate_room in duplicate_rooms:
-                print(duplicate_room)
-                set_of_new_rooms.discard(duplicate_room)
-
-        # Add new rooms
-        self.rooms[room_type] |= set_of_new_rooms
-        # Add new rooms to allocations
-        for room in set_of_new_rooms:
-            print("{} added succesfully".format(room))
-            self.allocations[room_type][room] = set()
-
-        self.total_no_of_rooms = len(self.rooms["offices"]) + len(self.rooms["livingspaces"])
-        # self.show_state()
+        self.total_no_of_rooms = len(self.rooms)
+        self.show_state()
 
     def add_person(self, person_name, person_type, wants_accommodation=False):
         """Adds a person into amity"""
 
         person_name = person_name.capitalize()
-        person = {person_name, }
 
-        # Check for duplicates in other peron types
-        if person_type == "fellows":
-            opposite_person_type = "staff"
-        elif person_type == "staff":
-            opposite_person_type = "fellows"
-
-        new_set = self.people[opposite_person_type] | person
-        expected_length = len(self.people[opposite_person_type]) + 1
-
-        if len(new_set) < expected_length:
-            print("{} Already exists. He/She cannot be re-added.".format(person_name))
+        # Check for duplicates
+        if person_name in self.people:
+            print("{} already exists in amity and cannot be re-added".
+                  format(person_name))
             return
 
         # Staff should not have accommodation
-        if person_type == "staff" and wants_accommodation:
-            print("Staff cannot have accommodation")
+        if person_type is "staff" and wants_accommodation:
+            print("{} will be added but cannot be accommodated as"
+                  " s/he is a staff member".format(person_name))
+            wants_accommodation = False
 
-        self.people[person_type] |= person
-        self.unbooked_people["offices"].add(person_name)
+        # Add the person
+        if person_type is "fellows":
+            self.people[person_name] = Fellow(person_name, wants_accommodation)
+        else:
+            self.people[person_name] = Staff(person_name)
+        self.total_no_of_people += 1
 
-        if person_type == "fellows" and wants_accommodation:
-            self.unbooked_people["livingspaces"].add(person_name)
+        # Assign room
+        allocation = self.assign_random_room(person_name, wants_accommodation)
 
-        self.total_no_of_people = len(self.people["fellows"]) + len(self.people["staff"])
-        # self.show_state()
+        if allocation["office"]["assigned"]:
+            print("{} has been added and assigned the office {}".
+                  format(person_name, self.people[person_name].office))
+        elif not allocation["office"]["assigned"]:
+            print("{} has been added but has not been assigned an office".
+                  format(person_name))
 
-    def load_people(self, person):
+        if not wants_accommodation:
+            self.show_state()
+            return
+
+        if allocation["livingspace"]["assigned"]:
+            print("{} has been assigned the livingspace {}".
+                  format(person_name, self.people[person_name].livingspace))
+        elif not allocation["livingspace"]["assigned"]:
+            print("{} has not been assigned a livingspace".format(person_name))
+
+        self.show_state()
+
+    def assign_random_room(self, person_name, wants_accommodation):
+        """Assigns a random room to a person"""
+        rooms = list(self.rooms.values())
+        office_reason = None
+
+        perused_offices = set()
+        is_assigned_office = False
+        assign_office = True
+
+        if not self.total_no_of_offices:
+            office_reason = "You have run out of offices"
+
+        if self.people[person_name].office:
+            # Has been assigned an office.
+            is_assigned_office = False
+            assign_office = False
+            office_reason = "{} already has an office".format(person_name)
+
+        while assign_office and self.total_no_of_offices:
+            try:
+                amity_room = random.choice(rooms)
+                if type(amity_room) is LivingSpace:
+                    continue
+            except IndexError:
+                break
+            if amity_room not in perused_offices and \
+               type(amity_room) is Office and \
+               len(amity_room.occupants) < amity_room.max_no_of_occupants:
+                amity_room.occupants.add(person_name)
+                self.people[person_name].office = amity_room.name
+                is_assigned_office = True
+                assign_office = False
+            perused_offices.add(amity_room)
+            if len(perused_offices) is self.total_no_of_offices:
+                office_reason = "You have run out of offices"
+                break
+
+        if wants_accommodation:
+            livingspace_info = self.assign_random_livingspace(person_name,
+                                                              rooms)
+            is_assigned_accommodation = livingspace_info["assigned"]
+            livingspace_reason = livingspace_info["reason"]
+        else:
+            is_assigned_accommodation = False
+            livingspace_reason = "{} does not want accommodation". \
+                format(person_name)
+
+        return {"office": {"assigned": is_assigned_office,
+                           "reason": office_reason},
+                "livingspace": {"assigned": is_assigned_accommodation,
+                                "reason": livingspace_reason}}
+
+    def assign_random_livingspace(self, person_name, rooms):
+        """Assigns a random livingspace to a fellow"""
+        livingspace_reason = None
+        is_assigned_accommodation = False
+        assign_accommodation = True
+        perused_livingspaces = set()
+        try:
+            if self.people[person_name].livingspace:
+                # Has been assigned a livingspace.
+                is_assigned_accommodation = False
+                assign_accommodation = False
+                livingspace_reason = "{} already has a livingspace". \
+                    format(person_name)
+        except AttributeError:
+            print("Person is not a fellow")
+            return False
+
+        if not self.total_no_of_livingspaces:
+            livingspace_reason = "You have run out of livingspaces"
+
+        # If fellow is to be assigned accommodation and rooms are available
+        while assign_accommodation and self.total_no_of_livingspaces:
+            try:
+                amity_room = random.choice(rooms)
+                if type(amity_room) is Office:
+                    continue
+            except IndexError:
+                break
+            if amity_room not in perused_livingspaces and \
+               type(amity_room) is LivingSpace and \
+               len(amity_room.occupants) < amity_room.max_no_of_occupants:
+
+                amity_room.occupants.add(person_name)
+                self.people[person_name].livingspace = amity_room.name
+                is_assigned_accommodation = True
+                assign_accommodation = False
+            perused_livingspaces.add(amity_room)
+            if len(perused_livingspaces) is self.total_no_of_livingspaces:
+                livingspace_reason = "You have run out of livingspaces"
+                break
+
+        return {"assigned": is_assigned_accommodation,
+                "reason": livingspace_reason}
+
+    def reallocate_person(self, person_name, new_room):
+        """Reallocate a person to a new room"""
+        person_name = person_name.capitalize()
+        new_room = new_room.capitalize()
+
+        if person_name not in self.people.keys():
+            print("{} does not exist in amity".format(person_name))
+            return
+
+        if type(self.rooms[new_room]) is LivingSpace and \
+           type(self.people[person_name]) is Staff:
+            print("Staff cannot be reallocated to livingspaces")
+            return
+
+        if type(self.rooms[new_room]) is LivingSpace and not \
+           self.people[person_name].wants_accommodation:
+            print("{} does not want accommodation".format(person_name))
+            return
+
+        person = self.people[person_name]
+        room = self.rooms[new_room]
+
+        if type(room) is Office:
+            assignment = person.change_office(new_room, self.rooms)
+        else:
+            assignment = person.change_livingspace(new_room, self.rooms)
+
+        if assignment:
+            print("{} successfully moved to {}".format(person_name, new_room))
+        else:
+            print("{} could not be moved to {}".format(person_name, new_room))
+
+    def load_people(self, person_line):
         """Loads people from a text file into amity.
            A sample line of the file is:
            FIRSTNAME LASTNAME FELLOW|STAFF Y
         """
-        person = person.split()
+        person = person_line.split()
 
         # Combine first and last names
         try:
@@ -103,7 +234,8 @@ class Amity:
 
         if len(person) < 2 or len(person) > 3:
             print("Wrong format encountered. Please check the line at '{}'. \
-                   Use the format FIRSTNAME LASTNAME FELLOW|STAFF Y".format(person[0]))
+                   Use the format FIRSTNAME LASTNAME FELLOW|STAFF Y".
+                  format(person[0]))
             return
 
         if person[1] != "STAFF" and person[1] != "FELLOW":
@@ -113,8 +245,9 @@ class Amity:
             return
 
         if len(person) == 3 and person[2] != "Y":
-            print("Wrong format encountered. Please check the line at '{}'. \
-            The fourth word should be Y or none at all".format(person[0]))
+            print("Wrong format encountered. Please check the line at '{}'. "
+                  "The fourth word should be Y or none at all".
+                  format(person[0]))
             return
 
         wants_accommodation = False
@@ -126,60 +259,72 @@ class Amity:
         elif person[1] == "FELLOW":
             self.add_person(person[0], "fellows", wants_accommodation)
 
+        self.show_state()
+
     def allocate(self):
-        """Allocates everyone who does not have a room if rooms are available"""
+        """Allocates everyone who does not have
+        a room if rooms are available"""
         if self.total_no_of_rooms == 0:
-            print("There are no rooms to allocate people to. Create rooms using the command 'create_room'")
+            print("There are no rooms to allocate people to."
+                  "Create rooms using the command 'create_room'")
             return False
 
         if self.total_no_of_people == 0:
-            print("There are no people to allocate rooms to. Add people using the command 'add_person'")
+            print("There are no people to allocate rooms to."
+                  " Add people using the command 'add_person'")
             return False
 
-        office_pop_list = set()
-        living_space_pop_list = set()
-        for person in self.unbooked_people["offices"]:
-            # Determine if person is staff or fellow
-            if len(set([person]) & self.people["staff"]) > 0:
-                staff = Staff(person)
-                staff.book_office(self.allocations["offices"])
-                if staff.added:
-                    office_pop_list.add(staff.name)
+        # Check if person already allocated
+        # Return reason for not allocating from assign_random_room()
+        for person_name, person in self.people.items():
+            if type(person) is Fellow:
+                is_fellow = True
+                allocation = \
+                    self.assign_random_room(person.name,
+                                            person.wants_accommodation)
+            else:
+                is_fellow = False
+                allocation = \
+                    self.assign_random_room(person.name,
+                                            wants_accommodation=False)
 
-                if staff.alarm:
-                    break
+            if allocation["office"]["assigned"]:
+                print("{} has been assigned the office {}".
+                      format(person.name, person.office))
+            elif not allocation["office"]["assigned"]:
+                print("{} has been not been assigned an office. {}"
+                      .format(person.name,
+                              allocation["office"]["reason"]))
 
-            elif len(set([person]) & self.people["fellows"]) > 0:
-                fellow = Fellow(person)
-                fellow.book_office(self.allocations["offices"])
-                if fellow.added:
-                    office_pop_list.add(fellow.name)
+            if allocation["livingspace"]["assigned"] and is_fellow:
+                print("{} has been assigned the livingspace {}".
+                      format(person.name, person.livingspace))
+            elif not allocation["livingspace"]["assigned"] and is_fellow:
+                print("{} has been not been assigned a livingspace {}".
+                      format(person.name,
+                             allocation["livingspace"]["reason"]))
 
-                if fellow.alarm:
-                    break
-
-        self.unbooked_people["offices"] -= office_pop_list
-
-        for person in self.unbooked_people["livingspaces"]:
-            fellow = Fellow(person)
-            fellow.book_living_space(self.allocations["livingspaces"])
-            if fellow.added:
-                living_space_pop_list.add(fellow.name)
-
-            if fellow.alarm:
-                break
-
-        self.unbooked_people["livingspaces"] -= living_space_pop_list
+        self.show_state()
 
     def print_allocations(self, filename=None):
         """Shows all room allocations"""
         allocations = "Offices\r\n"
-        for office, people in self.allocations["offices"].items():
-            allocations += office + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
+        if self.total_no_of_offices:
+            for room_name, room in self.rooms.items():
+                if type(room) is Office:
+                    allocations += room.show_occupants()
+        else:
+            allocations += "There are no offices that have been added to Amity"
 
         allocations += "\r\nLiving Spaces\r\n"
-        for livingspace, people in self.allocations["livingspaces"].items():
-            allocations += livingspace + "\r\n" + "-"*100 + "\r\n" + ", ".join(people) + "\r\n"*2
+        if self.total_no_of_livingspaces:
+            for room_name, room in self.rooms.items():
+                if type(room) is LivingSpace:
+                    allocations += room.show_occupants()
+        else:
+            allocations += \
+                "There are no livingspaces that have been added to Amity"
+
         print(allocations)
 
         if filename and self.save_to_file(filename, allocations):
@@ -187,37 +332,51 @@ class Amity:
 
     def print_unallocated(self, filename=None):
         """Shows all unallocated people"""
+        if not self.total_no_of_people:
+            print("There are no people in Amity. Add people first")
+            return
+
         unallocations = "Offices\r\n"
-        for people in self.unbooked_people["offices"]:
-            unallocations += people + "\r\n"
+        for person_name, person in self.people.items():
+            if not person.office:
+                unallocations += person_name + "\r\n"
+
+        if unallocations is "Offices\r\n":
+            unallocations += "Everyone has been placed in an office"
 
         unallocations += "\r\nLiving Spaces\r\n"
-        for people in self.unbooked_people["livingspaces"]:
-            unallocations += people + "\r\n"
+        for person_name, person in self.people.items():
+            if type(person) is Fellow and person.wants_accommodation \
+                    and not person.livingspace:
+                unallocations += person_name + "\r\n"
+
+        if unallocations[-17:] == "\r\nLiving Spaces\r\n":
+            unallocations += "Every eligible fellow has been accommodated"
+
         print(unallocations)
 
         if filename:
             self.save_to_file(filename, unallocations)
 
     def print_room(self, room_name):
-        # ascertain whether room is in amity and is office or livingspace
+        """Print out the occupants of a room"""
         room_name = room_name.capitalize()
-        room_set = {room_name, }
-        if len(self.rooms["offices"] & room_set) > 0:
-            room_type = "offices"
-        elif len(self.rooms["livingspaces"] & room_set) > 0:
-            room_type = "livingspaces"
-        else:
-            print("{} does not exist in Amity. Create a room using the command 'create_room'".format(room_name))
-            return
-
-        print("\n{}\n{}\n{}\n".format(room_name,
-                                      "_"*100,
-                                      ", ".join(self.allocations[room_type][room_name])
-                                      )
-              )
+        try:
+            room = self.rooms[room_name]
+            if not room.occupants:
+                print("{} has no occupants".format(room.name))
+                return
+            print("\n{}\n{}\n{}\n".format(room.name,
+                                          "_"*100,
+                                          ", ".join(room.occupants)
+                                          )
+                  )
+        except KeyError:
+            print("{} does not exist in Amity. Create the room first".
+                  format(room_name))
 
     def save_amity(self, db_name=None):
+        """Saves amity to a database"""
         reserved_names = ["test_database", "some_database"]
         if db_name:
             if db_name.lower() in reserved_names:
@@ -237,106 +396,109 @@ class Amity:
         self.save_current_data(db_name)
 
     def save_current_data(self, db_name):
+        """Does all the heavy-lifting to save data to a database"""
         session = self.connect_to_db(db_name)
 
         if not session:
             return
 
         try:
-            amity = []
-            for fellow in self.people["fellows"]:
-                wants_accommodation = False
-                if {fellow, } & self.unbooked_people["livingspaces"]:
-                    wants_accommodation = True
-                amity.append(People(person_name=fellow, person_type="fellows", wants_accommodation=wants_accommodation))
-                
-            for staff in self.people["staff"]:
-                amity.append(People(person_name=staff, person_type="staff"))
-            for office in self.rooms["offices"]:
-                amity.append(Rooms(room_name=office, room_type="offices"))
-            for livingspace in self.rooms["livingspaces"]:
-                amity.append(Rooms(room_name=livingspace, room_type="livingspaces"))
-            for office, people in self.allocations["offices"].items():
-                for person in people:
-                    amity.append(Allocations(room_name=office,
-                                             person_name=person
-                                             )
-                                 )
-            for livingspace, people in self.allocations["livingspaces"].items():
-                for person in people:
-                    amity.append(Allocations(room_name=livingspace,
-                                             person_name=person
-                                             )
-                                 )
+            amity = list()
+            for person in self.people.values():
+                if person.office:
+                    amity.append(Allocations(person_name=person.name,
+                                             room_name=person.office))
+                if type(person) is Fellow:
+                    amity.append(People(person_name=person.name,
+                                        person_type="fellow",
+                                        wants_accommodation=person.
+                                        wants_accommodation))
+                    if person.livingspace:
+                        amity.append(Allocations(person_name=person.name,
+                                                 room_name=person.livingspace))
+                else:
+                    amity.append(People(person_name=person.name,
+                                        person_type="staff"))
+
+            for room in self.rooms.values():
+                if type(room) is Office:
+                    amity.append(Rooms(room_name=room.name,
+                                       room_type="office"))
+                else:
+                    amity.append(Rooms(room_name=room.name,
+                                       room_type="livingspace"))
 
             session.bulk_save_objects(amity)
             session.commit()
             print("Data saved to {}".format(db_name))
+
         except sqlalchemy.exc.IntegrityError:
             print("New data added to database")
 
     def load_amity(self, db_name):
-        # Check if database exists
+        """Load data from a database"""
         db_name += ".db"
+        # Check if database exists
         if not self.check_db_exists(db_name):
             print("{} database does not exist.".format(db_name))
             return
 
         try:
             session = self.connect_to_db(db_name)
-            if session:
-                # Clear data
-                self.clear_amity_data()
-                all_people = session.query(People)
-                all_rooms = session.query(Rooms)
-                allocations = session.query(Allocations)
-                for person in all_people:
-                    self.people[person.person_type].add(person.person_name)
-                    self.total_no_of_people += 1
-                for room in all_rooms:
-                    self.rooms[room.room_type].add(room.room_name)
-                    self.total_no_of_rooms += 1
-                    # Add all rooms to allocations
-                    self.allocations[room.room_type][room.room_name] = set()
+            if not session:
+                return
 
-                for allocation in allocations:
-                    room_type = session.query(Rooms.room_type).\
-                        filter_by(room_name=allocation.room_name).scalar()
-                    try:
-                        self.allocations[room_type][allocation.room_name].\
-                            add(allocation.person_name)
-                    except KeyError:
-                        self.allocations[room_type][allocation.room_name] = \
-                            {allocation.person_name, }
+            # Clear data
+            self.clear_amity_data()
+            all_people = session.query(People)
+            all_rooms = session.query(Rooms)
+            allocations = session.query(Allocations)
+            for person in all_people:
+                if person.person_type is "staff":
+                    self.people[person.person_name] = \
+                        Staff(person.person_name)
+                else:
+                    self.people[person.person_name] = \
+                        Fellow(person.person_name,
+                               wants_accommodation=person.wants_accommodation)
 
-                people_names = self.people["fellows"] | self.people["staff"]
-                allocated_people = session.query(Allocations.person_name).distinct()
-                allocated_names = set([allocated_person[0] for allocated_person in allocated_people])
-                unbooked_people = people_names - allocated_names
-                self.unbooked_people["offices"] = unbooked_people
+            for room in all_rooms:
+                if room.room_type is "office":
+                    self.rooms[room.room_name] = Office(room.room_name)
+                else:
+                    self.rooms[room.room_name] = \
+                        LivingSpace(room.room_name)
 
-                unaccommodated_fellows = session.query(People.person_name).filter_by(wants_accommodation=True)
-                unaccommodated_fellow_names = set([fellow[0] for fellow in unaccommodated_fellows])
-                self.unbooked_people["livingspaces"] = unaccommodated_fellow_names
+            for allocation in allocations:
+                if type(self.rooms[allocation.room_name]) is Office:
+                    self.people[allocation.person_name].office = \
+                        allocation.room_name
+                    self.rooms[allocation.room_name].occupants.\
+                        add(allocation.person_name)
+                    self.total_no_of_offices += 1
+                else:
+                    self.people[allocation.person_name].livingspace = \
+                        allocation.room_name
+                    self.rooms[allocation.room_name].occupants. \
+                        add(allocation.person_name)
+                    self.total_no_of_livingspaces += 1
+
+            self.total_no_of_rooms = len(self.rooms)
+            self.total_no_of_people = len(self.people)
+
+            print("Data from {} has been loaded.".format(db_name))
 
         except sqlalchemy.exc.OperationalError:
-            print("Incompatible database format. Please use a database created by amity system")
+            print("Incompatible database format. "
+                  "Please use a database created by amity system")
 
     def clear_amity_data(self):
         self.total_no_of_rooms = 0
         self.total_no_of_people = 0
-        self.rooms = {"offices": set(),
-                      "livingspaces": set()
-                      }
-        self.people = {"fellows": set(),
-                       "staff": set()
-                       }
-        self.unbooked_people = {"offices": set(),
-                                "livingspaces": set()
-                                }
-        self.allocations = {"offices": {},
-                            "livingspaces": {}
-                            }
+        self.total_no_of_offices = 0
+        self.total_no_of_livingspaces = 0
+        self.rooms = {}
+        self.people = {}
 
     @staticmethod
     def create_database(db_name):
@@ -362,7 +524,8 @@ class Amity:
         complete_name = os.path.join(save_path, filename)
 
         if os.path.isfile(complete_name):
-            print("Please use a file that does not exist in the directory to avoid overwriting your files")
+            print("Please use a file that does not exist in the directory"
+                  " to avoid overwriting your files.")
             return False
         try:
             allocations_file = open(complete_name, "w+")
@@ -385,24 +548,17 @@ class Amity:
         else:
             return False
     def show_state(self):  # pragma: no cover
-        print("--------------------------------------------------")
-        print("All rooms in amity")
-        print("--------------------------------------------------")
-        print(self.rooms)
-        print("--------------------------------------------------")
-        print("All people in Amity")
-        print("--------------------------------------------------")
-        print(self.people)
-        print("--------------------------------------------------")
-        print("People to be allocated")
-        print("--------------------------------------------------")
-        print(self.unbooked_people)
-        print("--------------------------------------------------")
-        print("Allocations are")
-        print("--------------------------------------------------")
-        print(self.allocations)
-        print("--------------------------------------------------")
-        print("Total number of people is {0}".format(self.total_no_of_people))
-        print("--------------------------------------------------")
-        print("Total number of rooms is {0}".format(self.total_no_of_rooms))
-        print("--------------------------------------------------")
+        if not DEBUG:
+            return
+        print("Rooms are\n{}".format("-"*65))
+        for room_name, amity_room in self.rooms.items():
+            print(amity_room.name + "(" + str(type(amity_room)) + ") -> ")
+            print(amity_room.occupants)
+        print("People are\n{}".format("-"*65))
+        for person_name, amity_person in self.people.items():
+            print(amity_person.name + " -> ")
+            print(amity_person.office)
+            try:
+                print(amity_person.livingspace)
+            except AttributeError:
+                pass

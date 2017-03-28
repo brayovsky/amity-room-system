@@ -4,9 +4,9 @@ This example uses docopt with the built in cmd module to demonstrate an
 interactive command application.
 Usage:
     Amity create_room (-o | --office | -l | --livingspace) <room_name>...
-    Amity add_person <person_name> (-f | --fellow | -s | --staff) [wants_accommodation]
-    amity allocate_people
-    Amity reallocate_person <person_identifier> <new_room_name>
+    Amity add_person <first_name> [<last_name>] (-f | --fellow | -s | --staff) [--wants_accommodation=N]
+    Amity allocate_people
+    Amity reallocate_person <new_room_name> <first_name> [<last_name>]
     Amity load_people <text_file>
     Amity print_allocations [-o] [<filename>]
     Amity print_unallocated [-o] [<filename>]
@@ -21,9 +21,12 @@ Options:
 """
 
 import cmd
+
 from docopt import docopt, DocoptExit
+
 from app.Amity import Amity
-from Person import Person
+
+amity = Amity()
 
 def docopt_cmd(func):
     """
@@ -72,9 +75,25 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_add_person(self, arg):
-        """Usage: add_person <person_name> (-f | --fellow | -s | --staff) [wants_accommodation]"""
-        person_name = arg["<person_name>"]
-        wants_accommodation = arg["wants_accommodation"]
+        """Usage: add_person <first_name> [<last_name>] (-f | --fellow | -s | --staff) [--wants_accommodation=N]"""
+        person_name = arg["<first_name>"]
+        if arg["<last_name>"]:
+            person_name += " " + arg["<last_name>"]
+
+        arg["--wants_accommodation"] = arg["--wants_accommodation"].upper()
+        accommodation_arguments = ["Y", "N"]
+        if arg["--wants_accommodation"]:
+            if arg["--wants_accommodation"] not in accommodation_arguments:
+                print("--wants_accommodation should be {}".
+                      format(" or ".join(accommodation_arguments)))
+                return
+            else:
+                if arg["--wants_accommodation"] == "Y":
+                    wants_accommodation = True
+                else:
+                    wants_accommodation = False
+        else:
+            wants_accommodation = False
 
         if arg["-s"] or arg["--staff"]:
             amity.add_person(person_name, "staff", wants_accommodation)
@@ -88,9 +107,12 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_reallocate_person(self, arg):
-        """Usage: reallocate_person <person_identifier> <new_room_name>"""
-        person = Person(arg["<person_identifier>"])
-        person.change_room(arg["<new_room_name>"], amity)
+        """Usage: reallocate_person <new_room_name> <first_name> [<last_name>]"""
+        person_identifier = arg["<first_name>"]
+        if arg["<last_name>"]:
+            person_identifier += " " + arg["<last_name>"]
+        amity.reallocate_person(person_identifier,
+                                arg["<new_room_name>"])
 
     @docopt_cmd
     def do_load_people(self, arg):
@@ -102,7 +124,6 @@ class AmityInteractive (cmd.Cmd):
             return
 
         for line in people_file:
-            # Call method for processing file into proper output and use existing functions DRY!!
             amity.load_people(line)
 
         people_file.close()
@@ -137,7 +158,8 @@ class AmityInteractive (cmd.Cmd):
     def do_load_state(self, arg):
         """Usage: load_state <sqlite_database>"""
         if amity.total_no_of_people or amity.total_no_of_rooms:
-            print("Loading data without saving any added data will clear that data!")
+            print("Loading data without saving any added data will clear "
+                  "that data!")
         amity.load_amity(arg["<sqlite_database>"])
 
     @docopt_cmd
@@ -154,6 +176,4 @@ class AmityInteractive (cmd.Cmd):
 
 if __name__ == '__main__':
     opt = docopt(__doc__, argv="-i")
-    amity = Amity()
     AmityInteractive().cmdloop()
-
