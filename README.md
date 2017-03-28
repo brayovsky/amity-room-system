@@ -45,14 +45,11 @@ Once you have run the app type `help` to see available commands. The commands ar
     Amity save_state [--db=sqlite_database]
     Amity load_state <sqlite_database>
 
-* To run tests and check for test coverage, run
+To run tests and check for test coverage, run
 
         nosetests test/ --with-coverage
 
-## Using the app
-Settings are located in the file `app/settings.py`.
-
-* To check on the state of amity(show rooms, allocations etc) set
+Settings are located in the file `app/settings.py`. To check on the state of amity(show rooms, allocations etc) when you run a command set
 
         DEBUG = True
 
