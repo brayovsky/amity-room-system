@@ -28,7 +28,6 @@ from app.Amity import Amity
 
 amity = Amity()
 
-
 def docopt_cmd(func):
     """
     This decorator is used to simplify the try/except block and pass the result

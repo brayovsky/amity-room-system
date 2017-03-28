@@ -386,7 +386,7 @@ class Amity:
             db_name += ".db"
         else:
             db_name = "amity.db"
-
+            
         # check if database exists
         if self.check_db_exists(db_name):
             self.reset_db(db_name)
@@ -547,7 +547,6 @@ class Amity:
             return True
         else:
             return False
-
     def show_state(self):  # pragma: no cover
         if not DEBUG:
             return
