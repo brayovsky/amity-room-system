@@ -4,9 +4,9 @@ This example uses docopt with the built in cmd module to demonstrate an
 interactive command application.
 Usage:
     Amity create_room (-o | --office | -l | --livingspace) <room_name>...
-    Amity add_person <person_name> (-f | --fellow | -s | --staff) [wants_accommodation]
+    Amity add_person <first_name> [<last_name>] (-f | --fellow | -s | --staff) [--wants_accommodation=N]
     Amity allocate_people
-    Amity reallocate_person <person_identifier> <new_room_name>
+    Amity reallocate_person <new_room_name> <first_name> [<last_name>]
     Amity load_people <text_file>
     Amity print_allocations [-o] [<filename>]
     Amity print_unallocated [-o] [<filename>]
@@ -81,15 +81,15 @@ class AmityInteractive (cmd.Cmd):
         if arg["<last_name>"]:
             person_name += " " + arg["<last_name>"]
 
+        arg["--wants_accommodation"] = arg["--wants_accommodation"].upper()
         accommodation_arguments = ["Y", "N"]
         if arg["--wants_accommodation"]:
-            arg["--wants_accommodation"] = arg["--wants_accommodation"].upper()
             if arg["--wants_accommodation"] not in accommodation_arguments:
                 print("--wants_accommodation should be {}".
                       format(" or ".join(accommodation_arguments)))
                 return
             else:
-                if arg["--wants_accommodation"]:
+                if arg["--wants_accommodation"] == "Y":
                     wants_accommodation = True
                 else:
                     wants_accommodation = False

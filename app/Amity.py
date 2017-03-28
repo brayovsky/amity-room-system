@@ -28,8 +28,8 @@ class Amity:
         # go through rooms adding each
         for room in room_names:
             room = room.capitalize()
-            if room not in self.rooms:
-                if room_type == "offices":
+            if room not in self.rooms.keys():
+                if room_type is "offices":
                     self.rooms[room] = Office(room)
                     print("{} successfully added to Amity".format(room))
                     self.total_no_of_offices += 1
@@ -37,11 +37,11 @@ class Amity:
                     self.rooms[room] = LivingSpace(room)
                     print("{} successfully added to Amity".format(room))
                     self.total_no_of_livingspaces += 1
-                self.total_no_of_rooms += 1
             else:
                 print("{} not added to amity as it already exists in Amity".
                       format(room))
 
+        self.total_no_of_rooms = len(self.rooms)
         self.show_state()
 
     def add_person(self, person_name, person_type, wants_accommodation=False):
@@ -56,13 +56,13 @@ class Amity:
             return
 
         # Staff should not have accommodation
-        if person_type == "staff" and wants_accommodation:
+        if person_type is "staff" and wants_accommodation:
             print("{} will be added but cannot be accommodated as"
                   " s/he is a staff member".format(person_name))
             wants_accommodation = False
 
         # Add the person
-        if person_type == "fellows":
+        if person_type is "fellows":
             self.people[person_name] = Fellow(person_name, wants_accommodation)
         else:
             self.people[person_name] = Staff(person_name)
@@ -111,19 +111,19 @@ class Amity:
         while assign_office and self.total_no_of_offices:
             try:
                 amity_room = random.choice(rooms)
-                if type(amity_room) == LivingSpace:
+                if type(amity_room) is LivingSpace:
                     continue
             except IndexError:
                 break
             if amity_room not in perused_offices and \
-               type(amity_room) == Office and \
+               type(amity_room) is Office and \
                len(amity_room.occupants) < amity_room.max_no_of_occupants:
                 amity_room.occupants.add(person_name)
                 self.people[person_name].office = amity_room.name
                 is_assigned_office = True
                 assign_office = False
             perused_offices.add(amity_room)
-            if len(perused_offices) == self.total_no_of_offices:
+            if len(perused_offices) is self.total_no_of_offices:
                 office_reason = "You have run out of offices"
                 break
 
@@ -160,12 +160,12 @@ class Amity:
         while assign_accommodation and self.total_no_of_livingspaces:
             try:
                 amity_room = random.choice(rooms)
-                if type(amity_room) == Office:
+                if type(amity_room) is Office:
                     continue
             except IndexError:
                 break
             if amity_room not in perused_livingspaces and \
-               type(amity_room) == LivingSpace and \
+               type(amity_room) is LivingSpace and \
                len(amity_room.occupants) < amity_room.max_no_of_occupants:
 
                 amity_room.occupants.add(person_name)
@@ -173,7 +173,7 @@ class Amity:
                 is_assigned_accommodation = True
                 assign_accommodation = False
             perused_livingspaces.add(amity_room)
-            if len(perused_livingspaces) == self.total_no_of_livingspaces:
+            if len(perused_livingspaces) is self.total_no_of_livingspaces:
                 livingspace_reason = "You have run out of livingspaces"
                 break
 
@@ -188,12 +188,12 @@ class Amity:
             print("{} does not exist in amity".format(person_name))
             return
 
-        if type(self.rooms[new_room]) == LivingSpace and \
-           type(self.people[person_name]) == Staff:
+        if type(self.rooms[new_room]) is LivingSpace and \
+           type(self.people[person_name]) is Staff:
             print("Staff cannot be reallocated to livingspaces")
             return
 
-        if type(self.rooms[new_room]) == LivingSpace and not \
+        if type(self.rooms[new_room]) is LivingSpace and not \
            self.people[person_name].wants_accommodation:
             print("{} does not want accommodation".format(person_name))
             return
@@ -201,7 +201,7 @@ class Amity:
         person = self.people[person_name]
         room = self.rooms[new_room]
 
-        if type(room) == Office:
+        if type(room) is Office:
             assignment = person.change_office(new_room, self.rooms)
         else:
             assignment = person.change_livingspace(new_room, self.rooms)
@@ -270,7 +270,7 @@ class Amity:
         # Check if person already allocated
         # Return reason for not allocating from assign_random_room()
         for person_name, person in self.people.items():
-            if type(person) == Fellow:
+            if type(person) is Fellow:
                 is_fellow = True
                 allocation = \
                     self.assign_random_room(person.name,
@@ -304,7 +304,7 @@ class Amity:
         allocations = "Offices\r\n"
         if self.total_no_of_offices:
             for room_name, room in self.rooms.items():
-                if type(room) == Office:
+                if type(room) is Office:
                     allocations += room.show_occupants()
         else:
             allocations += "There are no offices that have been added to Amity"
@@ -312,7 +312,7 @@ class Amity:
         allocations += "\r\nLiving Spaces\r\n"
         if self.total_no_of_livingspaces:
             for room_name, room in self.rooms.items():
-                if type(room) == LivingSpace:
+                if type(room) is LivingSpace:
                     allocations += room.show_occupants()
         else:
             allocations += \
@@ -334,12 +334,12 @@ class Amity:
             if not person.office:
                 unallocations += person_name + "\r\n"
 
-        if unallocations == "Offices\r\n":
+        if unallocations is "Offices\r\n":
             unallocations += "Everyone has been placed in an office"
 
         unallocations += "\r\nLiving Spaces\r\n"
         for person_name, person in self.people.items():
-            if type(person) == Fellow and person.wants_accommodation \
+            if type(person) is Fellow and person.wants_accommodation \
                     and not person.livingspace:
                 unallocations += person_name + "\r\n"
 
@@ -399,7 +399,7 @@ class Amity:
                 if person.office:
                     amity.append(Allocations(person_name=person.name,
                                              room_name=person.office))
-                if type(person) == Fellow:
+                if type(person) is Fellow:
                     amity.append(People(person_name=person.name,
                                         person_type="fellow",
                                         wants_accommodation=person.
@@ -412,7 +412,7 @@ class Amity:
                                         person_type="staff"))
 
             for room in self.rooms.values():
-                if type(room) == Office:
+                if type(room) is Office:
                     amity.append(Rooms(room_name=room.name,
                                        room_type="office"))
                 else:
@@ -444,7 +444,7 @@ class Amity:
             all_rooms = session.query(Rooms)
             allocations = session.query(Allocations)
             for person in all_people:
-                if person.person_type == "staff":
+                if person.person_type is "staff":
                     self.people[person.person_name] = \
                         Staff(person.person_name)
                 else:
@@ -453,14 +453,14 @@ class Amity:
                                wants_accommodation=person.wants_accommodation)
 
             for room in all_rooms:
-                if room.room_type == "office":
+                if room.room_type is "office":
                     self.rooms[room.room_name] = Office(room.room_name)
                 else:
                     self.rooms[room.room_name] = \
                         LivingSpace(room.room_name)
 
             for allocation in allocations:
-                if type(self.rooms[allocation.room_name]) == Office:
+                if type(self.rooms[allocation.room_name]) is Office:
                     self.people[allocation.person_name].office = \
                         allocation.room_name
                     self.rooms[allocation.room_name].occupants.\

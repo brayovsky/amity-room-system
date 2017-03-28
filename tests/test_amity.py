@@ -1,7 +1,10 @@
+import os
 from unittest import TestCase
 import unittest
+
+from app.Rooms import Office, LivingSpace
+from app.Person import Fellow, Staff
 from tests.basetest import BaseTestCase
-import os
 
 
 class TestAmity(BaseTestCase):
@@ -22,10 +25,13 @@ class TestAmity(BaseTestCase):
         self.amity.add_room(["Germany"], "livingspaces")
 
         assert self.amity.total_no_of_rooms == 3
+        assert self.amity.total_no_of_offices == 2
+        assert self.amity.total_no_of_livingspaces == 1
 
     def test_does_not_load_invalid_file(self):
         bad_filename = "badsample.txt"
-        save_path = os.path.dirname(os.path.realpath(__file__)) + "/../app/userdata/"
+        save_path = os.path.dirname(os.path.realpath(__file__)) + \
+            "/../app/userdata/"
         complete_name = os.path.join(save_path, bad_filename)
 
         bad_file_handle = open(complete_name, "w+")
@@ -57,17 +63,9 @@ class TestAmity(BaseTestCase):
 
         people_file.close()
         os.remove(save_path + "goodsample.txt")
+        print("people are {}".format(str(self.amity.total_no_of_people)))
 
         assert self.amity.total_no_of_people == 2
-
-    def test_staff_cannot_want_accommodation(self):
-        self.amity.add_person("Mbarak", "staff", True)
-
-        self.assertDictEqual(
-            self.amity.unbooked_people, {"offices": {"Mbarak", },
-                                         "livingspaces": set()
-                                        }
-        )
 
     def test_does_not_add_person_twice(self):
         self.amity.add_person("Mbarak", "staff", False)
@@ -76,7 +74,10 @@ class TestAmity(BaseTestCase):
         assert self.amity.total_no_of_people == 1
 
     def test_capitalizes_person(self):
-        pass
+        self.amity.add_person("nernst", "fellows")
+
+        assert "Nernst" in self.amity.people.keys()
+        assert self.amity.people["Nernst"].name == "Nernst"
 
     def test_does_not_add_room_twice(self):
         self.amity.add_room(["France", "Britain", "France"], "offices")
@@ -89,20 +90,16 @@ class TestAmity(BaseTestCase):
 
     def test_capitalizes_room(self):
         self.amity.add_room(["yoUnda"], "offices")
-        assert "Younda" in self.amity.rooms
+        assert "Younda" in self.amity.rooms.keys()
+        assert self.amity.rooms["Younda"].name == "Younda"
 
     def test_prints_allocation_to_file(self):
-        self.amity.allocations = {
-            "offices": {
-                "America": set()
-            },
-            "livingspaces": {
-                "Africa": set()
-            }
-        }
+        self.amity.rooms["America"] = Office("America")
+        self.amity.total_no_of_offices = 1
         self.amity.print_allocations("testfile")
         # Load file
-        allocations_file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../app/userdata/"
+        allocations_file_dir = os.path.dirname(os.path.realpath(__file__)) + \
+            "/../app/userdata/"
         complete_name = os.path.join(allocations_file_dir, "testfile.txt")
         allocations_file_handle = open(complete_name)
 
@@ -112,10 +109,28 @@ class TestAmity(BaseTestCase):
 
         allocations_file_handle.close()
         os.remove(complete_name)
-        assert test_string[1] == "America\n"
+        assert test_string[1][:7] == "America"
 
     def test_prints_unallocated_to_file(self):
-        pass
+        self.amity.people["Brian"] = Fellow("Brian", False)
+        self.amity.total_no_of_people = 1
+
+        self.amity.print_unallocated("testfile2")
+
+        # Load file
+        allocations_file_dir = os.path.dirname(os.path.realpath(__file__)) + \
+            "/../app/userdata/"
+        complete_name = os.path.join(allocations_file_dir, "testfile2.txt")
+        allocations_file_handle = open(complete_name)
+
+        test_string = []
+        for line in allocations_file_handle:
+            test_string.append(line)
+
+        allocations_file_handle.close()
+        os.remove(complete_name)
+        assert test_string[0] == "Offices\n"
+        assert test_string[1] == "Brian\n"
 
     def test_does_not_overwrite_existing_file(self):
         allocations_file_dir = os.path.dirname(
@@ -128,38 +143,27 @@ class TestAmity(BaseTestCase):
         os.remove(complete_name)
 
     def test_clears_data(self):
-        self.amity.people = {"fellows": {"Brian", },
-                             "staff": {"Garfield", }
-                             }
-        self.amity.rooms = {"offices": {"America", },
-                            "livingspaces": {"Java", }
-                            }
-        self.amity.unbooked_people = {"offices": set(),
-                                      "livingspaces": set()
-                                      }
-        self.amity.allocations = {
-            "offices": {"America": {"Brian", "Garfield"}},
-            "livingspaces": {"Java": set()}
-            }
+        self.amity.total_no_of_rooms = 1
+        self.amity.total_no_of_offices = 1
+        self.amity.total_no_of_people = 1
+        self.amity.rooms["Room"] = Office("Room")
+        self.amity.people["Adam"] = Staff("Adam")
+
         self.amity.clear_amity_data()
 
-        self.assertDictEqual(self.amity.people, {"fellows": set(),
-                                                 "staff": set()
-                                                 })
-        self.assertDictEqual(self.amity.rooms, {"offices": set(),
-                                                "livingspaces": set()
-                                                })
-        self.assertDictEqual(self.amity.unbooked_people, {"offices": set(),
-                                                          "livingspaces": set()
-                                                          })
-        self.assertDictEqual(self.amity.allocations, {"offices": {},
-                                                      "livingspaces": {}
-                                                      })
-        assert not self.amity.total_no_of_people
         assert not self.amity.total_no_of_rooms
+        assert not self.amity.total_no_of_offices
+        assert not self.amity.total_no_of_people
+        assert not self.amity.rooms
+        assert not self.amity.people
 
-    def test_allocates_people(self):
-        pass
+    def test_allocates_rooms_to_a_new_person(self):
+        self.amity.rooms["Oculus"] = Office("Oculus")
+        self.amity.total_no_of_rooms = 1
+        self.amity.total_no_of_offices = 1
+        self.amity.add_person("joe", "staff")
+
+        assert self.amity.people["Joe"].office == "Oculus"
 
     def test_does_not_allocate_without_rooms(self):
         pass
@@ -179,10 +183,12 @@ class TestRoom(TestCase):
         pass
 
     def test_cannot_add_more_than_six_occupants_to_office(self):
-
         pass
 
     def test_cannot_add_more_than_four_occupants_to_livingspace(self):
+        pass
+
+    def test_show_occupants(self):
         pass
 
 
