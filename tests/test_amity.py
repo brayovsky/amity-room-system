@@ -51,10 +51,12 @@ class TestAmity(BaseTestCase):
 
     def test_loads_file(self):
         good_filename = "goodsample.txt"
-        save_path = os.path.dirname(os.path.realpath(__file__)) + "/../app/userdata/"
+        save_path = os.path.dirname(os.path.realpath(__file__)) + \
+            "/../app/userdata/"
         good_file = os.path.join(save_path, good_filename)
         good_file_handle = open(good_file, "w+")
-        good_file_handle.write("OLUWAFEMI SULE FELLOW Y\r\nDOMINIC WALTERS STAFF")
+        good_file_handle.\
+            write("OLUWAFEMI SULE FELLOW Y\r\nDOMINIC WALTERS STAFF")
         good_file_handle.close()
 
         people_file = open(save_path + "goodsample.txt")
@@ -84,7 +86,8 @@ class TestAmity(BaseTestCase):
 
         assert self.amity.total_no_of_rooms == 2
 
-        self.amity.add_room(["France", "Britain", "France", "Russia"], "livingspaces")
+        self.amity.add_room(["France", "Britain", "France", "Russia"],
+                            "livingspaces")
 
         assert self.amity.total_no_of_rooms == 3
 
@@ -135,7 +138,8 @@ class TestAmity(BaseTestCase):
     def test_does_not_overwrite_existing_file(self):
         allocations_file_dir = os.path.dirname(
             os.path.realpath(__file__)) + "/../app/userdata/"
-        complete_name = os.path.join(allocations_file_dir, "test_overwrite.txt")
+        complete_name = os.path.join(allocations_file_dir,
+                                     "test_overwrite.txt")
         file_handle = open(complete_name, "w+")
 
         assert not self.amity.save_to_file("test_overwrite", "one")

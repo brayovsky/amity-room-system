@@ -9,6 +9,7 @@ from app.Model import Base, Allocations, People, Rooms
 from app.Person import Fellow, Staff
 from app.Rooms import LivingSpace, Office
 
+
 class TestAmityDatabaseFunctions(BaseTestCase):
     def setUp(self):
         super(TestAmityDatabaseFunctions, self).setUp()
