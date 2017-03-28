@@ -7,6 +7,7 @@ class Person:
         self.office = None
 
     def change_office(self, new_room, rooms):
+        """Used when reallocating to change a person's room"""
         if new_room not in rooms.keys():
             print("{} does not exist in amity".format(new_room))
             return False

@@ -4,6 +4,7 @@ class Room:
         self.occupants = set()
 
     def show_occupants(self):
+        """Report occupants of this particular room"""
         if self.occupants:
             return self.name + "\r\n" + "-"*100 + "\r\n" + \
                                    ", ".join(self.occupants) + "\r\n"*2

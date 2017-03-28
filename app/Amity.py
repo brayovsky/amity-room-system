@@ -143,6 +143,7 @@ class Amity:
                                 "reason": livingspace_reason}}
 
     def assign_random_livingspace(self, person_name, rooms):
+        """Assigns a random livingspace to a fellow"""
         livingspace_reason = None
         is_assigned_accommodation = False
         assign_accommodation = True
@@ -161,6 +162,7 @@ class Amity:
         if not self.total_no_of_livingspaces:
             livingspace_reason = "You have run out of livingspaces"
 
+        # If fellow is to be assigned accommodation and rooms are available
         while assign_accommodation and self.total_no_of_livingspaces:
             try:
                 amity_room = random.choice(rooms)
@@ -185,6 +187,7 @@ class Amity:
                 "reason": livingspace_reason}
 
     def reallocate_person(self, person_name, new_room):
+        """Reallocate a person to a new room"""
         person_name = person_name.capitalize()
         new_room = new_room.capitalize()
 
@@ -356,7 +359,7 @@ class Amity:
             self.save_to_file(filename, unallocations)
 
     def print_room(self, room_name):
-        # ascertain whether room is in amity and is office or livingspace
+        """Print out the occupants of a room"""
         room_name = room_name.capitalize()
         try:
             room = self.rooms[room_name]
@@ -373,6 +376,7 @@ class Amity:
                   format(room_name))
 
     def save_amity(self, db_name=None):
+        """Saves amity to a database"""
         reserved_names = ["test_database", "some_database"]
         if db_name:
             if db_name.lower() in reserved_names:
@@ -392,6 +396,7 @@ class Amity:
         self.save_current_data(db_name)
 
     def save_current_data(self, db_name):
+        """Does all the heavy-lifting to save data to a database"""
         session = self.connect_to_db(db_name)
 
         if not session:
@@ -431,8 +436,9 @@ class Amity:
             print("New data added to database")
 
     def load_amity(self, db_name):
-        # Check if database exists
+        """Load data from a database"""
         db_name += ".db"
+        # Check if database exists
         if not self.check_db_exists(db_name):
             print("{} database does not exist.".format(db_name))
             return
