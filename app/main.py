@@ -76,9 +76,25 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_add_person(self, arg):
-        """Usage: add_person <person_name> (-f | --fellow | -s | --staff) [wants_accommodation]"""
-        person_name = arg["<person_name>"]
-        wants_accommodation = arg["wants_accommodation"]
+        """Usage: add_person <first_name> [<last_name>] (-f | --fellow | -s | --staff) [--wants_accommodation=N]"""
+        person_name = arg["<first_name>"]
+        if arg["<last_name>"]:
+            person_name += " " + arg["<last_name>"]
+
+        accommodation_arguments = ["Y", "N"]
+        if arg["--wants_accommodation"]:
+            arg["--wants_accommodation"] = arg["--wants_accommodation"].upper()
+            if arg["--wants_accommodation"] not in accommodation_arguments:
+                print("--wants_accommodation should be {}".
+                      format(" or ".join(accommodation_arguments)))
+                return
+            else:
+                if arg["--wants_accommodation"]:
+                    wants_accommodation = True
+                else:
+                    wants_accommodation = False
+        else:
+            wants_accommodation = False
 
         if arg["-s"] or arg["--staff"]:
             amity.add_person(person_name, "staff", wants_accommodation)
@@ -92,8 +108,11 @@ class AmityInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_reallocate_person(self, arg):
-        """Usage: reallocate_person <person_identifier> <new_room_name>"""
-        amity.reallocate_person(arg["<person_identifier>"],
+        """Usage: reallocate_person <new_room_name> <first_name> [<last_name>]"""
+        person_identifier = arg["<first_name>"]
+        if arg["<last_name>"]:
+            person_identifier += " " + arg["<last_name>"]
+        amity.reallocate_person(person_identifier,
                                 arg["<new_room_name>"])
 
     @docopt_cmd
