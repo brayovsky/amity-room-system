@@ -3,6 +3,14 @@ class Room:
         self.name = room_name
         self.occupants = set()
 
+    def show_occupants(self):
+        if self.occupants:
+            return self.name + "\r\n" + "-"*100 + "\r\n" + \
+                                   ", ".join(self.occupants) + "\r\n"*2
+        else:
+            return self.name + "\r\n" + "-"*100 + "\r\n" + \
+                                   self.name + " has no occupants" + "\r\n"*2
+
 
 class Office(Room):
     max_no_of_occupants = 6

@@ -11,7 +11,6 @@ from app.settings import *
 from app.Model import People, Rooms, Allocations, Base
 
 
-
 class Amity:
     total_no_of_rooms = 0
     total_no_of_people = 0
@@ -58,8 +57,8 @@ class Amity:
 
         # Staff should not have accommodation
         if person_type == "staff" and wants_accommodation:
-            print("{} will be added but cannot be accomodated as he is a staff"
-                  " member".format(person_name))
+            print("{} will be added but cannot be accommodated as"
+                  " s/he is a staff member".format(person_name))
             wants_accommodation = False
 
         # Add the person
@@ -94,7 +93,6 @@ class Amity:
     def assign_random_room(self, person_name, wants_accommodation):
         """Assigns a random room to a person"""
         rooms = list(self.rooms.values())
-        livingspace_reason = None
         office_reason = None
 
         perused_offices = set()
@@ -105,7 +103,7 @@ class Amity:
             office_reason = "You have run out of offices"
 
         if self.people[person_name].office:
-            # has been assigned an office
+            # Has been assigned an office.
             is_assigned_office = False
             assign_office = False
             office_reason = "{} already has an office".format(person_name)
@@ -129,37 +127,13 @@ class Amity:
                 office_reason = "You have run out of offices"
                 break
 
-        is_assigned_accommodation = False
-        assign_accommodation = True
-        perused_livingspaces = set()
         if wants_accommodation:
-            if self.people[person_name].livingspace:
-                # has been assigned a livingspace
-                is_assigned_accommodation = False
-                assign_accommodation = False
-                livingspace_reason = "{} already has a livingspace".\
-                    format(person_name)
-            if not self.total_no_of_livingspaces:
-                livingspace_reason = "You have run out of livingspaces"
-            while assign_accommodation and self.total_no_of_livingspaces:
-                try:
-                    amity_room = random.choice(rooms)
-                    if type(amity_room) == Office:
-                        continue
-                except IndexError:
-                    break
-                if amity_room not in perused_livingspaces and \
-                   type(amity_room) == LivingSpace and \
-                   len(amity_room.occupants) < amity_room.max_no_of_occupants:
-                    amity_room.occupants.add(person_name)
-                    self.people[person_name].livingspace = amity_room.name
-                    is_assigned_accommodation = True
-                    assign_accommodation = False
-                perused_livingspaces.add(amity_room)
-                if len(perused_livingspaces) == self.total_no_of_livingspaces:
-                    livingspace_reason = "You have run out of livingspaces"
-                    break
+            livingspace_info = self.assign_random_livingspace(person_name,
+                                                              rooms)
+            is_assigned_accommodation = livingspace_info["assigned"]
+            livingspace_reason = livingspace_info["reason"]
         else:
+            is_assigned_accommodation = False
             livingspace_reason = "{} does not want accommodation". \
                 format(person_name)
 
@@ -167,6 +141,75 @@ class Amity:
                            "reason": office_reason},
                 "livingspace": {"assigned": is_assigned_accommodation,
                                 "reason": livingspace_reason}}
+
+    def assign_random_livingspace(self, person_name, rooms):
+        livingspace_reason = None
+        is_assigned_accommodation = False
+        assign_accommodation = True
+        perused_livingspaces = set()
+        if self.people[person_name].livingspace:
+            # Has been assigned a livingspace.
+            is_assigned_accommodation = False
+            assign_accommodation = False
+            livingspace_reason = "{} already has a livingspace". \
+                format(person_name)
+
+        if not self.total_no_of_livingspaces:
+            livingspace_reason = "You have run out of livingspaces"
+
+        while assign_accommodation and self.total_no_of_livingspaces:
+            try:
+                amity_room = random.choice(rooms)
+                if type(amity_room) == Office:
+                    continue
+            except IndexError:
+                break
+            if amity_room not in perused_livingspaces and \
+               type(amity_room) == LivingSpace and \
+               len(amity_room.occupants) < amity_room.max_no_of_occupants:
+
+                amity_room.occupants.add(person_name)
+                self.people[person_name].livingspace = amity_room.name
+                is_assigned_accommodation = True
+                assign_accommodation = False
+            perused_livingspaces.add(amity_room)
+            if len(perused_livingspaces) == self.total_no_of_livingspaces:
+                livingspace_reason = "You have run out of livingspaces"
+                break
+
+        return {"assigned": is_assigned_accommodation,
+                "reason": livingspace_reason}
+
+    def reallocate_person(self, person_name, new_room):
+        person_name = person_name.capitalize()
+        new_room = new_room.capitalize()
+
+        if person_name not in self.people.keys():
+            print("{} does not exist in amity".format(person_name))
+            return
+
+        if type(self.rooms[new_room]) == LivingSpace and \
+           type(self.people[person_name]) == Staff:
+            print("Staff cannot be reallocated to livingspaces")
+            return
+
+        if type(self.rooms[new_room]) == LivingSpace and not \
+           self.people[person_name].wants_accommodation:
+            print("{} does not want accommodation".format(person_name))
+            return
+
+        person = self.people[person_name]
+        room = self.rooms[new_room]
+
+        if type(room) == Office:
+            assignment = person.change_office(new_room, self.rooms)
+        else:
+            assignment = person.change_livingspace(new_room, self.rooms)
+
+        if assignment:
+            print("{} successfully moved to {}".format(person_name, new_room))
+        else:
+            print("{} could not be moved to {}".format(person_name, new_room))
 
     def load_people(self, person_line):
         """Loads people from a text file into amity.
@@ -184,7 +227,8 @@ class Amity:
 
         if len(person) < 2 or len(person) > 3:
             print("Wrong format encountered. Please check the line at '{}'. \
-                   Use the format FIRSTNAME LASTNAME FELLOW|STAFF Y".format(person[0]))
+                   Use the format FIRSTNAME LASTNAME FELLOW|STAFF Y".
+                  format(person[0]))
             return
 
         if person[1] != "STAFF" and person[1] != "FELLOW":
@@ -260,24 +304,16 @@ class Amity:
         allocations = "Offices\r\n"
         if self.total_no_of_offices:
             for room_name, room in self.rooms.items():
-                if type(room) == Office and room.occupants:
-                    allocations += room.name + "\r\n" + "-"*100 + "\r\n" + \
-                                   ", ".join(room.occupants) + "\r\n"*2
-                elif type(room) == Office and not room.occupants:
-                    allocations += room.name + "\r\n" + "-"*100 + "\r\n" + \
-                                   room.name + " has no occupants" + "\r\n"*2
+                if type(room) == Office:
+                    allocations += room.show_occupants()
         else:
             allocations += "There are no offices that have been added to Amity"
 
         allocations += "\r\nLiving Spaces\r\n"
         if self.total_no_of_livingspaces:
             for room_name, room in self.rooms.items():
-                if type(room) == LivingSpace and room.occupants:
-                    allocations += room.name + "\r\n" + "-"*100 + "\r\n" + \
-                                   ", ".join(room.occupants) + "\r\n"*2
-                elif type(room) == LivingSpace and not room.occupants:
-                    allocations += room.name + "\r\n" + "-" * 100 + "\r\n" + \
-                                   room.name + " has no occupants" + "\r\n" * 2
+                if type(room) == LivingSpace:
+                    allocations += room.show_occupants()
         else:
             allocations += \
                 "There are no livingspaces that have been added to Amity"
@@ -366,8 +402,8 @@ class Amity:
                 if type(person) == Fellow:
                     amity.append(People(person_name=person.name,
                                         person_type="fellow",
-                                        wants_accommodation=
-                                        person.wants_accommodation))
+                                        wants_accommodation=person.
+                                        wants_accommodation))
                     if person.livingspace:
                         amity.append(Allocations(person_name=person.name,
                                                  room_name=person.livingspace))
@@ -414,8 +450,7 @@ class Amity:
                 else:
                     self.people[person.person_name] = \
                         Fellow(person.person_name,
-                               wants_accommodation=
-                               person.wants_accommodation)
+                               wants_accommodation=person.wants_accommodation)
 
             for room in all_rooms:
                 if room.room_type == "office":
@@ -479,7 +514,8 @@ class Amity:
         complete_name = os.path.join(save_path, filename)
 
         if os.path.isfile(complete_name):
-            print("Please use a file that does not exist in the directory to avoid overwriting your files")
+            print("Please use a file that does not exist in the directory"
+                  " to avoid overwriting your files.")
             return False
         try:
             allocations_file = open(complete_name, "w+")
