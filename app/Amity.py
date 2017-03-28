@@ -22,7 +22,7 @@ class Amity:
     def add_room(self, room_names, room_type):
         """Adds rooms into amity"""
 
-        # Capitalize all room names
+        # Remove duplicates
         room_names = set(room_names)
 
         # go through rooms adding each
@@ -147,12 +147,16 @@ class Amity:
         is_assigned_accommodation = False
         assign_accommodation = True
         perused_livingspaces = set()
-        if self.people[person_name].livingspace:
-            # Has been assigned a livingspace.
-            is_assigned_accommodation = False
-            assign_accommodation = False
-            livingspace_reason = "{} already has a livingspace". \
-                format(person_name)
+        try:
+            if self.people[person_name].livingspace:
+                # Has been assigned a livingspace.
+                is_assigned_accommodation = False
+                assign_accommodation = False
+                livingspace_reason = "{} already has a livingspace". \
+                    format(person_name)
+        except AttributeError:
+            print("Person is not a fellow")
+            return False
 
         if not self.total_no_of_livingspaces:
             livingspace_reason = "You have run out of livingspaces"

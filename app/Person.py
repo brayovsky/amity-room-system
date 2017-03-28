@@ -41,6 +41,9 @@ class Fellow(Person):
         self.livingspace = None
 
     def change_livingspace(self, new_room, rooms):
+        if not self.wants_accommodation:
+            return False
+
         if new_room not in rooms.keys():
             print("{} does not exist in amity".format(new_room))
             return False

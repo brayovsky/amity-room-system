@@ -1,6 +1,6 @@
 import os
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 from app.Rooms import Office, LivingSpace
 from app.Person import Fellow, Staff
@@ -166,13 +166,78 @@ class TestAmity(BaseTestCase):
         assert self.amity.people["Joe"].office == "Oculus"
 
     def test_does_not_allocate_without_rooms(self):
-        pass
+        self.amity.total_no_of_rooms = 1
+        assert not self.amity.allocate()
 
     def test_does_not_allocate_without_people(self):
-        pass
+        self.amity.total_no_of_people = 1
+        assert not self.amity.allocate()
 
     def test_allocates_person_when_added(self):
-        pass
+        self.amity.rooms["Java"] = Office("Java")
+        self.amity.total_no_of_offices = 1
+        self.amity.rooms["America"] = LivingSpace("America")
+        self.amity.total_no_of_livingspaces = 1
+        self.amity.total_no_of_rooms = 2
+
+        self.amity.add_person("macharia", "fellows", wants_accommodation=True)
+
+        assert self.amity.people["Macharia"].office == "Java"
+        assert self.amity.people["Macharia"].livingspace == "America"
+
+    def test_allocate_people(self):
+        self.amity.rooms["Uganda"] = Office("Uganda")
+        self.amity.rooms["Kenya"] = LivingSpace("Kenya")
+        self.amity.total_no_of_rooms = 2
+        self.amity.total_no_of_offices = 1
+        self.amity.total_no_of_livingspaces = 1
+        self.amity.people["Billy"] = Fellow("Billy", wants_accommodation=True)
+        self.amity.people["Dan"] = Fellow("Dan", wants_accommodation=False)
+        self.amity.people["Ferry"] = Staff("Ferry")
+        self.amity.total_no_of_people = 3
+
+        self.amity.allocate()
+
+        assert self.amity.people["Dan"].office == "Uganda"
+        assert self.amity.people["Billy"].office == "Uganda"
+        assert self.amity.people["Ferry"].office == "Uganda"
+        assert self.amity.people["Billy"].livingspace == "Kenya"
+        assert len(self.amity.rooms["Kenya"].occupants) == 1
+        assert len(self.amity.rooms["Uganda"].occupants) == 3
+
+    def test_does_not_assign_staff_accommodation(self):
+        self.amity.people["Dan"] = Staff("Dan")
+        assert not \
+            self.amity.assign_random_livingspace("Dan", self.amity.rooms)
+
+    def test_does_not_reassign_livingspace(self):
+        self.amity.people["Dan"] = Fellow("Dan", wants_accommodation=True)
+        self.amity.rooms["Kenya"] = LivingSpace("Kenya")
+        self.amity.total_no_of_rooms = 1
+        self.amity.total_no_of_livingspaces = 1
+        self.amity.people["Dan"].livingspace = "Kenya"
+
+        allocation = self.amity.assign_random_livingspace("Dan",
+                                                          self.amity.rooms)
+        assert not allocation["assigned"]
+
+    def test_does_not_assign_allocation_without_rooms(self):
+        self.amity.people["Dan"] = Fellow("Dan", wants_accommodation=True)
+        allocation = self.amity.assign_random_livingspace("Dan",
+                                                          self.amity.rooms)
+
+        assert not allocation["assigned"]
+
+    def test_assigns_accommodation(self):
+        self.amity.people["Dan"] = Fellow("Dan", wants_accommodation=True)
+        self.amity.rooms["Kenya"] = LivingSpace("Kenya")
+        self.amity.total_no_of_livingspaces = 1
+        self.amity.total_no_of_rooms = 1
+        rooms = list(self.amity.rooms.values())
+
+        allocation = self.amity.assign_random_livingspace("Dan", rooms)
+
+        assert allocation["assigned"]
 
 
 class TestRoom(TestCase):
@@ -182,14 +247,23 @@ class TestRoom(TestCase):
     def tearDown(self):
         pass
 
-    def test_cannot_add_more_than_six_occupants_to_office(self):
-        pass
+    def test_shows_occupants(self):
+        kenya = Office("Kenya")
+        kenya.occupants = {"Brian", }
 
-    def test_cannot_add_more_than_four_occupants_to_livingspace(self):
-        pass
+        kenya_occupants = kenya.show_occupants()
+        expected_occupants = "Kenya\r\n" + "-"*100 + "\r\n" + \
+                             "Brian" + "\r\n"*2
 
-    def test_show_occupants(self):
-        pass
+        assert kenya_occupants == expected_occupants
+
+    def test_reports_no_occupants(self):
+        kenya = Office("Kenya")
+        kenya_occupants = kenya.show_occupants()
+        expected_occupants = "Kenya\r\n" + "-"*100 + "\r\n" + \
+                             "Kenya has no occupants" + "\r\n"*2
+
+        assert kenya_occupants == expected_occupants
 
 
 class TestPerson(TestCase):
@@ -200,14 +274,78 @@ class TestPerson(TestCase):
         pass
 
     def test_does_not_reallocate_to_invalid_room(self):
-        pass
+        rooms = dict()
 
-    def test_does_not_reallocate_invalid_person(self):
-        pass
+        rooms["Kenya"] = Office("Kenya")
+        john = Staff("John")
 
-    def test_staff_does_not_reallocate_to_livingspace(self):
-        pass
+        assert not john.change_office("Uganda", rooms)
 
+    def test_does_not_reallocate_to_livingspace_if_office(self):
+        rooms = dict()
+
+        rooms["Kenya"] = LivingSpace("Kenya")
+        john = Staff("John")
+
+        assert not john.change_office("Kenya", rooms)
+
+    def test_does_not_reallocate_to_filled_office(self):
+        rooms = dict()
+
+        rooms["Kenya"] = Office("Kenya")
+        rooms["Kenya"].occupants = {1, 2, 3, 4, 5, 6}
+
+        john = Staff("John")
+        assert not john.change_office("Kenya", rooms)
+
+    def test_reallocates_office(self):
+        rooms = dict()
+
+        rooms["Kenya"] = Office("Kenya")
+
+        john = Staff("John")
+        assert john.change_office("Kenya", rooms)
+
+    def test_does_not_reallocate_to_invalid_livingspace(self):
+        rooms = dict()
+
+        rooms["Kenya"] = Office("Kenya")
+        john = Fellow("John", wants_accommodation=True)
+
+        assert not john.change_livingspace("Uganda", rooms)
+
+    def test_doesnt_reallocate_livingspace_if_doesnt_want_accommodation(self):
+        rooms = dict()
+
+        rooms["Kenya"] = LivingSpace("Kenya")
+        john = Fellow("John", wants_accommodation=False)
+
+        assert not john.change_livingspace("Kenya", rooms)
+
+    def test_does_not_reallocate_to_office_if_livingspace(self):
+        rooms = dict()
+
+        rooms["Kenya"] = Office("Kenya")
+        john = Fellow("John", wants_accommodation=True)
+
+        assert not john.change_livingspace("Kenya", rooms)
+
+    def test_does_not_reallocate_to_filled_livingspace(self):
+        rooms = dict()
+
+        rooms["Kenya"] = LivingSpace("Kenya")
+        rooms["Kenya"].occupants = {1, 2, 3, 4}
+
+        john = Fellow("John", wants_accommodation=True)
+        assert not john.change_livingspace("Kenya", rooms)
+
+    def test_reallocates_livingspace(self):
+        rooms = dict()
+
+        rooms["Kenya"] = LivingSpace("Kenya")
+
+        john = Fellow("John", wants_accommodation=True)
+        assert john.change_livingspace("Kenya", rooms)
 
 if __name__ == "__main__":
     unittest.main()
